@@ -3,6 +3,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { ArrowUp, Bot, PlayCircle, Sparkles, UserRound, X } from 'lucide-react'
 import { DEMO_LABEL, showDemo } from '../lib/site.js'
+import { api } from '../lib/env.js'
 
 const SUGGESTIONS = ['Como funciona a simulação de falha?', 'O que o controle de acesso permite?', 'Integra com o Active Directory?', 'Como é a implantação?']
 const GREETING = {
@@ -68,7 +69,7 @@ const Assistant = forwardRef(function Assistant(_, ref) {
     setInput('')
     setBusy(true)
     try {
-      const res = await fetch('/api/assistant', {
+      const res = await fetch(api('/api/assistant'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: next.filter((m) => m !== GREETING).slice(-12).map(({ role, content }) => ({ role, content })) }),

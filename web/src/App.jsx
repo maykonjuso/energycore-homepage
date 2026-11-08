@@ -14,6 +14,7 @@ import Segments from './components/Segments.jsx'
 import Statement from './components/Statement.jsx'
 import Steps from './components/Steps.jsx'
 import { reducedMotion } from './lib/motion.js'
+import { STATIC } from './lib/env.js'
 
 export default function App() {
   const assistant = useRef(null)
@@ -29,7 +30,7 @@ export default function App() {
         <Statement />
         <Platform />
         <Facts />
-        <Demos onAsk={() => assistant.current?.open()} />
+        <Demos onAsk={STATIC ? undefined : () => assistant.current?.open()} />
         <HowItWorks />
         <Security />
         <Steps />
@@ -37,7 +38,7 @@ export default function App() {
         <Contact />
       </main>
       <Footer />
-      <Assistant ref={assistant} />
+      {!STATIC && <Assistant ref={assistant} />}
     </>
   )
 }

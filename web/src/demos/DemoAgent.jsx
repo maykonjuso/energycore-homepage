@@ -106,9 +106,15 @@ export default function DemoAgent({ onAsk }) {
             O agente consulta topologia, saúde, linhagem, simulação de falha, causa raiz e relatórios por ferramentas, e cada número vem com a fonte. Também funciona como servidor MCP para outros clientes de IA.
           </p>
         </div>
-        <button className="btn-primary" onClick={onAsk}>
-          <MessageCircle size={17} /> Perguntar ao assistente
-        </button>
+        {onAsk ? (
+          <button className="btn-primary" onClick={onAsk}>
+            <MessageCircle size={17} /> Perguntar ao assistente
+          </button>
+        ) : (
+          <a className="btn-primary" href="#contato">
+            <MessageCircle size={17} /> Falar com a equipe
+          </a>
+        )}
       </div>
     </div>
   )

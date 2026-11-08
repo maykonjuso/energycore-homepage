@@ -5,6 +5,15 @@ import { CheckCircle2, Clock, Mail, Send, ShieldCheck } from 'lucide-react'
 import { FOOTER } from '../data/content.js'
 import { revealIn, useMotion } from '../lib/motion.js'
 import { useDemoEvent } from '../lib/site.js'
+import { STATIC, api } from '../lib/env.js'
+
+// Site estático (GitHub Pages): sem servidor, a mensagem abre no e-mail de quem escreve, já preenchida.
+function mailto(f) {
+  const topic = TOPICS.find(([v]) => v === f.topic)?.[1] ?? f.topic
+  const extra = [['Empresa', f.company], ['Cargo', f.role], ['Telefone', f.phone]].filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`)
+  const lines = [f.message, '', `Nome: ${f.name}`, `E-mail: ${f.email}`, ...extra]
+  return `mailto:${FOOTER.email}?subject=${encodeURIComponent(`[Site] ${topic} · ${f.company || f.name}`)}&body=${encodeURIComponent(lines.join('\n'))}`
+}
 
 const TOPICS = [
   ['demonstracao', 'Quero uma demonstração'],
@@ -27,10 +36,15 @@ export default function Contact() {
   const set = (k) => (e) => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value })
   const submit = async (e) => {
     e.preventDefault()
-    setState('sending')
     setError('')
+    if (STATIC) {
+      window.location.href = mailto(f)
+      setState('sent')
+      return
+    }
+    setState('sending')
     try {
-      const res = await fetch('/api/contact', {
+      const res = await fetch(api('/api/contact'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...f, elapsed_ms: Date.now() - opened.current }),
@@ -77,8 +91,20 @@ export default function Contact() {
           {state === 'sent' ? (
             <div className="flex min-h-[420px] flex-col items-center justify-center text-center" role="status">
               <CheckCircle2 size={48} className="text-ok" />
-              <h3 className="mt-4 font-display text-[24px] font-bold">Mensagem enviada.</h3>
-              <p className="mt-2 max-w-sm text-muted">Obrigado, {f.name.split(' ')[0]}. Mandamos uma confirmação para {f.email} e respondemos em até 1 dia útil.</p>
+              <h3 className="mt-4 font-display text-[24px] font-bold">{STATIC ? 'Mensagem pronta no seu e-mail.' : 'Mensagem enviada.'}</h3>
+              <p className="mt-2 max-w-sm text-muted">
+                {STATIC ? (
+                  <>
+                    Obrigado, {f.name.split(' ')[0]}. Abrimos o seu aplicativo de e-mail com a mensagem preenchida: é só enviar. Se não abriu, escreva para{' '}
+                    <a className="text-brand hover:underline" href={`mailto:${FOOTER.email}`}>
+                      {FOOTER.email}
+                    </a>
+                    .
+                  </>
+                ) : (
+                  <>Obrigado, {f.name.split(' ')[0]}. Mandamos uma confirmação para {f.email} e respondemos em até 1 dia útil.</>
+                )}
+              </p>
               <button className="btn-ghost mt-6" onClick={() => (setF(EMPTY), setState('idle'), (opened.current = Date.now()))}>
                 Enviar outra mensagem
               </button>

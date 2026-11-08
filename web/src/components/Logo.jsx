@@ -1,6 +1,8 @@
+import { asset } from '../lib/env.js'
+
 // Logo da EnergyCore (PNG branco usado como máscara: assume a cor do texto, nos dois temas).
 export default function Logo({ height = 34, mark = false, className = '' }) {
-  const src = mark ? '/brand/mark.png' : '/brand/logo.png'
+  const src = asset(mark ? 'brand/mark.png' : 'brand/logo.png')
   const ratio = mark ? 191 / 197 : 309 / 281
   return (
     <span
