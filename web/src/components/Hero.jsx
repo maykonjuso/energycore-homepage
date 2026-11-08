@@ -20,11 +20,16 @@ export default function Hero() {
       // fromTo (fim explícito): os botões têm transição CSS e o .from() poderia gravar o meio da transição como fim.
       .fromTo('[data-hero="cta"] > *', { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, stagger: 0.08, clearProps: 'transform,opacity' }, '-=0.4')
       .fromTo('[data-hero="shot"]', { y: 80, opacity: 0, scale: 0.94 }, { y: 0, opacity: 1, scale: 1, duration: 1.3, ease: 'elastic.out(1, 0.75)' }, '-=0.6')
-      .fromTo('[data-hero="chip"]', { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, stagger: 0.12, ease: 'back.out(2)' }, '-=0.8')
+      .fromTo('[data-hero="chip"]', { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, stagger: 0.12, ease: 'back.out(2)', clearProps: 'transform' }, '-=0.8')
     parallax(ref.current, ref.current)
     // Ao sair, os indicadores se espalham para fora (orbitavam a tela).
-    gsap.utils.toArray('[data-hero="chip"]').forEach((el, i) =>
-      gsap.to(el, { x: (i % 2 ? 1 : -1) * 120, y: -60, opacity: 0, ease: 'none', scrollTrigger: { trigger: ref.current, start: 'center center', end: 'bottom top', scrub: true } }),
+    // Saída no elemento de fora, com início explícito: voltar a rolagem devolve os indicadores.
+    gsap.utils.toArray('[data-hero="chip-out"]').forEach((el, i) =>
+      gsap.fromTo(
+        el,
+        { x: 0, y: 0, opacity: 1 },
+        { x: (i % 2 ? 1 : -1) * 120, y: -60, opacity: 0, ease: 'none', immediateRender: false, scrollTrigger: { trigger: ref.current, start: 'center center', end: 'bottom top', scrub: true } },
+      ),
     )
   })
   return (
@@ -69,9 +74,14 @@ export default function Hero() {
             <Shot name="overview" alt="Visão geral da plataforma EnergyCore: carga total, carga crítica, nobreaks, alarmes, PUE e diagrama unifilar" eager />
           </div>
           {HERO.chips.map((c, i) => (
-            <div key={c.label} data-hero="chip" className={`card absolute hidden px-4 py-3 md:block ${CHIP_POS[i]} float-loop`} style={{ animationDelay: `${-i * 2.2}s` }}>
-              <div className="text-[11px] font-medium uppercase tracking-wider text-faint">{c.label}</div>
-              <div className={`num font-display text-[22px] font-bold ${TONE[c.tone]}`}>{c.value}</div>
+            // Fora: saída com a rolagem · meio: entrada · dentro: flutuar (CSS). Cada um mexe só no próprio transform.
+            <div key={c.label} data-hero="chip-out" className={`absolute hidden md:block ${CHIP_POS[i]}`}>
+              <div data-hero="chip">
+                <div className="card float-loop px-4 py-3" style={{ animationDelay: `${-i * 2.2}s` }}>
+                  <div className="text-[11px] font-medium uppercase tracking-wider text-faint">{c.label}</div>
+                  <div className={`num font-display text-[22px] font-bold ${TONE[c.tone]}`}>{c.value}</div>
+                </div>
+              </div>
             </div>
           ))}
         </div>

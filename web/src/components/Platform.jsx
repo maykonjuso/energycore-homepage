@@ -22,7 +22,11 @@ export default function Platform() {
         end: `+=${MODULES.length * 70}%`,
         pin: '[data-pin]',
         scrub: true,
-        onUpdate: (self) => setActive(Math.min(MODULES.length - 1, Math.floor(self.progress * MODULES.length))),
+        // Só re-renderiza quando o módulo muda (antes era a cada quadro da rolagem).
+        onUpdate: (self) => {
+          const i = Math.min(MODULES.length - 1, Math.floor(self.progress * MODULES.length))
+          setActive((cur) => (cur === i ? cur : i))
+        },
       })
     },
     [wide],
@@ -64,7 +68,12 @@ export default function Platform() {
                     </span>
                     <span className="min-w-0">
                       <span className="block text-[15px] font-semibold">{x.title}</span>
-                      {i === active && <span className="mt-1 block text-[14px] leading-relaxed text-muted">{x.text}</span>}
+                      {/* Sempre no DOM, abrindo pela altura: trocar de módulo não faz a coluna pular. */}
+                      <span className={`grid transition-[grid-template-rows,opacity] duration-500 ease-out ${i === active ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`} aria-hidden={i !== active}>
+                        <span className="overflow-hidden">
+                          <span className="block pt-1 text-[14px] leading-relaxed text-muted">{x.text}</span>
+                        </span>
+                      </span>
                     </span>
                   </button>
                 </li>
@@ -78,7 +87,7 @@ export default function Platform() {
             <div className="relative">
               {MODULES.map((x, i) => (
                 <div key={x.id} className={`transition-all duration-700 ${i === active ? 'relative opacity-100' : 'pointer-events-none absolute inset-0 translate-y-4 scale-[0.98] opacity-0'}`} aria-hidden={i !== active}>
-                  <Shot name={x.shot} alt={`Tela de ${x.title.toLowerCase()} da EnergyCore`} />
+                  <Shot name={x.shot} alt={`Tela de ${x.title.toLowerCase()} da EnergyCore`} eager />
                 </div>
               ))}
             </div>

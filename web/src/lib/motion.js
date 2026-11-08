@@ -24,12 +24,22 @@ export function useMotion(ref, setup, deps = []) {
 // Revela os [data-reveal] da seção em sequência quando entram na tela.
 export function revealIn(root) {
   const items = gsap.utils.toArray(root.querySelectorAll('[data-reveal]'))
-  ScrollTrigger.batch(items, {
-    start: 'top 88%',
-    once: true,
-    onEnter: (batch) =>
-      gsap.to(batch, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', stagger: 0.08, clearProps: 'transform,will-change', overwrite: true }),
-  })
+  const show = (batch) => gsap.to(batch, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', stagger: 0.08, clearProps: 'transform,will-change', overwrite: true })
+  // Página aberta no meio (link #contato ou recarregar rolado): o que já passou aparece direto,
+  // senão ficava invisível ao rolar de volta (o gatilho "once" só dispara entrando por baixo).
+  const line = window.innerHeight * 0.88
+  const passed = items.filter((el) => el.getBoundingClientRect().top < line)
+  if (passed.length) gsap.set(passed, { opacity: 1, y: 0, clearProps: 'transform' })
+  const pending = items.filter((el) => !passed.includes(el))
+  if (pending.length) ScrollTrigger.batch(pending, { start: 'top 88%', once: true, onEnter: show, onEnterBack: show })
+}
+
+// Fontes e imagens mudam a altura das seções depois que os gatilhos foram medidos:
+// remede tudo quando terminam de carregar (evita revelações fora de hora e a seção fixa desalinhada).
+if (typeof window !== 'undefined') {
+  const refresh = () => ScrollTrigger.refresh()
+  document.fonts?.ready.then(refresh)
+  window.addEventListener('load', refresh, { once: true })
 }
 
 // Parallax por profundidade: data-depth 0..5 anda 0,1x..1,2x da rolagem (só transform).
