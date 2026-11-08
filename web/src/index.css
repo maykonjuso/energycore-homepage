@@ -1,0 +1,205 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Cores em RGB para aceitar opacidade no Tailwind (bg-brand/10). Escuro é o padrão da marca. */
+:root {
+  --bg: 246 248 251;
+  --surface: 255 255 255;
+  --elevated: 238 242 247;
+  --line: 222 228 237;
+  --text: 12 21 38;
+  --muted: 71 85 105;
+  --faint: 96 109 131;
+  --brand: 32 106 196;
+  --brand-btn: 32 106 196;
+  --brand-strong: 29 92 176;
+  --accent: 14 165 160;
+  --ok: 22 163 74;
+  --warn: 217 119 6;
+  --crit: 220 38 38;
+  --glow: 42 120 214;
+  color-scheme: light;
+}
+.dark {
+  --bg: 7 12 20;
+  --surface: 13 20 33;
+  --elevated: 19 28 45;
+  --line: 33 45 66;
+  --text: 232 238 246;
+  --muted: 160 174 196;
+  --faint: 134 149 172;
+  --brand: 72 149 239;
+  --brand-btn: 37 99 235;
+  --brand-strong: 120 178 245;
+  --accent: 45 212 191;
+  --ok: 74 222 128;
+  --warn: 251 191 36;
+  --crit: 248 113 113;
+  --glow: 59 130 246;
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 84px;
+}
+body {
+  @apply bg-bg font-sans text-text antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection {
+  background: rgb(var(--brand) / 0.25);
+}
+
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 100;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgb(var(--brand));
+  color: white;
+  font-weight: 600;
+}
+.skip-link:focus {
+  top: 12px;
+}
+
+@layer components {
+  .page {
+    @apply mx-auto w-full max-w-page px-5 sm:px-8;
+  }
+  .eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full border border-line bg-surface/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-brand-strong backdrop-blur sm:text-[12px] sm:tracking-[0.14em];
+  }
+  .h2 {
+    @apply font-display text-[32px] font-bold leading-[1.1] tracking-tight sm:text-[44px];
+  }
+  .lead {
+    @apply text-[17px] leading-relaxed text-muted sm:text-[19px];
+  }
+  .btn {
+    @apply inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-[15px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-brandbtn text-white shadow-[0_10px_30px_-10px_rgb(var(--glow)/0.8)] hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_16px_40px_-12px_rgb(var(--glow)/0.9)];
+  }
+  .btn-ghost {
+    @apply btn border border-line bg-surface/60 text-text backdrop-blur hover:-translate-y-0.5 hover:border-brand/50;
+  }
+  .card {
+    @apply rounded-2xl border border-line bg-surface/80 shadow-[0_1px_0_rgb(255_255_255/0.04)_inset,0_20px_50px_-30px_rgb(0_0_0/0.5)] backdrop-blur;
+  }
+  .field {
+    @apply h-12 w-full rounded-xl border border-line bg-surface px-3.5 text-[15px] text-text outline-none transition placeholder:text-faint focus:border-brand focus:ring-4 focus:ring-brand/15;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Moldura de navegador para as telas do produto */
+.frame {
+  @apply overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_40px_120px_-40px_rgb(var(--glow)/0.55),0_20px_60px_-30px_rgb(0_0_0/0.6)];
+}
+.frame-bar {
+  @apply flex items-center gap-1.5 border-b border-line bg-elevated/80 px-4 py-2.5;
+}
+.frame-bar i {
+  @apply block size-2.5 rounded-full bg-line;
+}
+
+/* Grade e brilho de fundo */
+.grid-bg {
+  background-image: linear-gradient(rgb(var(--line) / 0.55) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--line) / 0.55) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
+}
+.glow {
+  background: radial-gradient(closest-side, rgb(var(--glow) / 0.35), transparent);
+  filter: blur(20px);
+}
+
+/* Profundidade (epic-design): só transform/opacity/filter animam */
+[data-depth] {
+  will-change: auto;
+}
+.float-loop {
+  animation: float 9s ease-in-out infinite;
+}
+.float-loop-slow {
+  animation: float 13s ease-in-out infinite;
+}
+@keyframes float {
+  50% {
+    transform: translateY(-10px);
+  }
+}
+.pulse-ring {
+  animation: pulse-ring 2.4s ease-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.7);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+.dash-flow {
+  stroke-dasharray: 6 8;
+  animation: dash 1.2s linear infinite;
+}
+@keyframes dash {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+.marquee {
+  animation: marquee 38s linear infinite;
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Estados iniciais das revelações (o JS anima; sem JS ou com movimento reduzido, tudo aparece) */
+.js-motion [data-reveal] {
+  opacity: 0;
+  transform: translateY(26px);
+}
+.word-light {
+  /* Apagada, mas legível (contraste ≥ 3:1 para texto grande); acende com a rolagem. */
+  color: rgb(var(--faint));
+  opacity: 0.75;
+  transition: color 0.3s;
+}
+.word-light.on {
+  color: rgb(var(--text));
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .js-motion [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .word-light {
+    color: rgb(var(--text));
+  }
+}

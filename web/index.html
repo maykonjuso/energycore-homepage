@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EnergyCore · Operação de datacenters e redes telecom em uma só plataforma</title>
+    <meta name="description" content="Monitoramento de energia do datacenter, rede telecom com topologia, simulação de falha e causa raiz, alarmes, agente de IA e controle de acesso até o dispositivo." />
+    <meta property="og:title" content="EnergyCore · Infraestrutura crítica sob controle" />
+    <meta property="og:description" content="Datacenter e telecom em uma só plataforma: energia, alarmes, topologia, causa raiz, IA e acesso granular." />
+    <meta property="og:image" content="/produto/overview-dark.webp" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta name="theme-color" content="#070c14" />
+    <link rel="icon" href="/brand/mark.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+    <script>
+      // Tema antes de pintar a página (sem piscar): escolha salva ou a do sistema.
+      try {
+        var t = localStorage.getItem('ec-site-theme')
+        if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches) || !t) document.documentElement.classList.add('dark')
+        if (t === 'light') document.documentElement.classList.remove('dark')
+      } catch (e) { document.documentElement.classList.add('dark') }
+    </script>
+  </head>
+  <body>
+    <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
