@@ -4,8 +4,13 @@ import DemoNetwork from './demos/DemoNetwork.jsx'
 import DemoAccess from './demos/DemoAccess.jsx'
 import Assistant from './components/Assistant.jsx'
 import Contact from './components/Contact.jsx'
-import { FAQ, MODULES } from './data/content.js'
-import { DEMO_LABEL, DEMO_TARGET } from './lib/site.js'
+import { act } from 'react'
+import { CONTENT } from './data/content.js'
+import { DEMO_TARGET } from './lib/site.js'
+import { setLang } from './lib/i18n.js'
+import Hero from './components/Hero.jsx'
+
+const DEMO_LABEL = CONTENT.pt.demoLabel
 
 beforeEach(() => vi.restoreAllMocks())
 
@@ -76,13 +81,31 @@ describe('contato', () => {
 })
 
 describe('conteúdo', () => {
-  it('toda demo pedida pelo assistente tem destino e rótulo', () => {
+  it('toda demo pedida pelo assistente tem destino e rótulo nos dois idiomas', () => {
     const ids = ['monitoramento', 'alarmes', 'topologia', 'falha', 'causa-raiz', 'tendencias', 'agente', 'acessos', 'implantacao', 'contato']
     for (const id of ids) {
       expect(DEMO_TARGET[id]).toBeTruthy()
-      expect(DEMO_LABEL[id]).toBeTruthy()
+      expect(CONTENT.pt.demoLabel[id]).toBeTruthy()
+      expect(CONTENT.en.demoLabel[id]).toBeTruthy()
     }
-    expect(MODULES.length).toBeGreaterThanOrEqual(5)
-    expect(FAQ.every((f) => f.q.endsWith('?'))).toBe(true)
+    expect(CONTENT.pt.platform.modules.length).toBe(6)
+    expect(CONTENT.pt.faq.items.every(([q]) => q.endsWith('?'))).toBe(true)
+  })
+
+  it('português e inglês têm exatamente as mesmas chaves e listas', () => {
+    const shape = (v) =>
+      Array.isArray(v) ? v.map(shape) : typeof v === 'function' ? 'fn' : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, shape(v[k])])) : typeof v
+    expect(shape(CONTENT.en)).toEqual(shape(CONTENT.pt))
+  })
+})
+
+describe('idioma', () => {
+  it('trocar para inglês muda os textos e o lang da página', () => {
+    render(<Hero />)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Do disjuntor')
+    act(() => setLang('en'))
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('From the breaker')
+    expect(document.documentElement.lang).toBe('en')
+    act(() => setLang('pt'))
   })
 })

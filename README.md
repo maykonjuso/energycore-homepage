@@ -16,18 +16,24 @@ Abra http://localhost:5174. Para ver como em produção: `cd web && npm run buil
 
 ## O que tem na página
 
-- **Topo** com a rede animada ao fundo, a tela real do produto flutuando e indicadores (parallax por profundidade, GSAP).
-- **Plataforma**: seção fixa que troca módulo e tela conforme a rolagem (energia, alarmes, topologia, simulação de falha,
-  tendências, acesso).
-- **Demonstrações interativas**: simular falha na rede (cálculo real de isolados, degradados e clientes), causa raiz
-  animada salto a salto, controle de acesso por perfil e conversa encenada com o agente de IA.
-- Como funciona, segurança e governança, números do produto, implantação, perguntas frequentes, contato e rodapé.
-- **Assistente de IA**: responde só com `server/knowledge.md`, sugere demonstrações (rola até elas e as dispara) e
-  sempre oferece falar com uma pessoa. Com `ANTHROPIC_API_KEY` usa Claude (saída estruturada, cache da base, fallback de
-  recusa); sem chave, responde pela base local.
-- **Contato**: envia para `contato@energycoreconsulting.com.br` com cópia de confirmação para a pessoa; campo
-  armadilha, tempo mínimo e limite por IP contra robôs; consentimento LGPD. Sem SMTP, grava em `server/.data/outbox`.
-- Tema claro e escuro, celular, "reduzir movimento", teclado e leitores de tela (auditoria axe sem violações).
+Identidade "prancha técnica": papel, tinta e um único sinal (laranja de segurança), Archivo em largura expandida e
+IBM Plex Mono para dados. Nada de gradiente, brilho ou desfoque.
+
+- **Topo** com um diagrama unifilar animado desenhado a nanquim (concessionária → quadros → nobreaks → racks → núcleo →
+  metro → OLT → clientes): a corrente corre nas linhas, um enlace cai e o carimbo mostra os clientes afetados. Pausável.
+- **Faixa de leituras** da demonstração, **antes e depois** do mesmo incidente, **plataforma** em abas com a tela de cada
+  módulo, **bancada de testes** (simular falha, causa raiz, controle de acesso, agente de IA), **do sensor à decisão**,
+  **especificação de segurança**, **implantação**, **perguntas** (com FAQPage) e **contato**.
+- **Português e inglês** (idioma do navegador ou o escolhido no topo; textos em `web/src/data/content.js`, com teste de
+  paridade entre os dois). O assistente e o servidor respondem no idioma escolhido.
+- **Acessibilidade**: símbolo da ONU no topo com tamanho do texto até 200%, alto contraste, animações e Libras (VLibras);
+  contraste ≥ 7:1, teclado, Alt+1 para o conteúdo, sem rolagem lateral em 320 px ou com texto em 200%. Auditoria axe
+  (WCAG A/AA/AAA) sem violações nos temas claro, escuro e alto contraste, nos dois idiomas.
+- Animações sem biblioteca (CSS e IntersectionObserver): nada começa escondido sem JavaScript e tudo para com
+  "reduzir movimento".
+- **Assistente de IA**: responde só com `server/knowledge.md`, sugere demonstrações e sempre oferece falar com uma pessoa.
+- **Contato**: envia para `contato@energycoreconsulting.com.br` com cópia para a pessoa; no GitHub Pages abre o e-mail
+  já preenchido.
 
 ## Conteúdo
 

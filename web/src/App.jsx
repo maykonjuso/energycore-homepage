@@ -1,37 +1,55 @@
 import { useEffect, useRef } from 'react'
+import { useContent } from './data/content.js'
+import { STATIC } from './lib/env.js'
+import { useLang } from './lib/i18n.js'
 import Assistant from './components/Assistant.jsx'
+import Bench from './components/Bench.jsx'
 import Contact from './components/Contact.jsx'
-import Demos from './components/Demos.jsx'
-import Facts from './components/Facts.jsx'
 import Faq from './components/Faq.jsx'
 import Footer from './components/Footer.jsx'
 import Hero from './components/Hero.jsx'
-import HowItWorks from './components/HowItWorks.jsx'
 import Nav from './components/Nav.jsx'
+import Pipeline from './components/Pipeline.jsx'
 import Platform from './components/Platform.jsx'
+import Problem from './components/Problem.jsx'
+import Readout from './components/Readout.jsx'
 import Security from './components/Security.jsx'
-import Segments from './components/Segments.jsx'
-import Statement from './components/Statement.jsx'
 import Steps from './components/Steps.jsx'
-import { reducedMotion } from './lib/motion.js'
-import { STATIC } from './lib/env.js'
 
 export default function App() {
+  const c = useContent()
+  const lang = useLang()
   const assistant = useRef(null)
+  // Título e descrição no idioma escolhido (abas, buscadores e leitores de tela).
   useEffect(() => {
-    if (!reducedMotion()) document.documentElement.classList.add('js-motion')
+    document.title = c.meta.title
+    document.querySelector('meta[name="description"]')?.setAttribute('content', c.meta.description)
+    document.querySelector('meta[property="og:locale"]')?.setAttribute('content', lang === 'en' ? 'en_US' : 'pt_BR')
+  }, [c, lang])
+  // Alt+1: ir para o conteúdo (padrão eMAG).
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.altKey && (e.code === 'Digit1' || e.key === '1')) {
+        e.preventDefault()
+        document.getElementById('conteudo')?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [])
   return (
     <>
+      <a href="#conteudo" className="skip-link">
+        {c.skip}
+      </a>
       <Nav />
-      <main id="conteudo">
+      <main id="conteudo" tabIndex={-1} className="outline-none">
         <Hero />
-        <Segments />
-        <Statement />
+        <Readout />
+        <Problem />
         <Platform />
-        <Facts />
-        <Demos onAsk={STATIC ? undefined : () => assistant.current?.open()} />
-        <HowItWorks />
+        <Bench onAsk={STATIC ? undefined : () => assistant.current?.open()} />
+        <Pipeline />
         <Security />
         <Steps />
         <Faq />

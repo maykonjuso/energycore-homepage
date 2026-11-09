@@ -1,89 +1,69 @@
-// Demo de causa raiz: a propagação toca em sequência quando a seção aparece (ou quando o assistente pede).
+// Demo de causa raiz: a propagação toca em sequência ao abrir a aba (ou quando o assistente pede).
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Database, Play, Search } from 'lucide-react'
-import { RCA_STEPS } from '../data/content.js'
-import { reducedMotion } from '../lib/motion.js'
+import { Play } from 'lucide-react'
+import { useContent } from '../data/content.js'
+import { motionOff } from '../lib/a11y.js'
 import { useDemoEvent } from '../lib/site.js'
 
-const LAYERS = [
-  ['Bronze', 'bruto · 5 min', 'eventos de telemetria'],
-  ['Silver', 'hora a hora', 'métricas por interface'],
-  ['Gold', 'estado atual', 'saúde do nó'],
-]
+const KIND = { root: 'bg-signal', hop: 'bg-warn', end: 'bg-ink' }
 
 export default function DemoRCA() {
-  const ref = useRef(null)
+  const t = useContent().rca
   const [step, setStep] = useState(-1)
   const timers = useRef([])
   const play = useCallback(() => {
     timers.current.forEach(clearTimeout)
-    if (reducedMotion()) return setStep(RCA_STEPS.length - 1)
+    if (motionOff()) return setStep(t.steps.length - 1)
     setStep(-1)
-    timers.current = RCA_STEPS.map((_, i) => setTimeout(() => setStep(i), 500 + i * 1100))
-  }, [])
+    timers.current = t.steps.map((_, i) => setTimeout(() => setStep(i), 400 + i * 1000))
+  }, [t.steps])
   useEffect(() => {
-    const io = new IntersectionObserver(([e]) => e.isIntersecting && (play(), io.disconnect()), { threshold: 0.4 })
-    io.observe(ref.current)
-    return () => (io.disconnect(), timers.current.forEach(clearTimeout))
+    play()
+    return () => timers.current.forEach(clearTimeout)
   }, [play])
-  useDemoEvent(useCallback((id) => id === 'causa-raiz' && setTimeout(play, 600), [play]))
-  const done = step >= RCA_STEPS.length - 1
+  useDemoEvent(useCallback((id) => id === 'causa-raiz' && setTimeout(play, 500), [play]))
+  const done = step >= t.steps.length - 1
   return (
-    <div ref={ref} className="grid gap-6 lg:grid-cols-[1fr_340px]">
-      <div className="card p-5 sm:p-7">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div>
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wider text-faint">
-            <Search size={15} className="text-brand" /> Como o problema se propagou
-          </div>
-          <button className="btn-ghost h-9 px-3 text-[13px]" onClick={play}>
-            <Play size={14} /> Repetir
+          <p className="label">{t.title}</p>
+          <button type="button" className="btn-line min-h-11 px-3 text-[0.8125rem]" onClick={play}>
+            <Play size={14} aria-hidden /> {t.replay}
           </button>
         </div>
-        <ol className="relative mt-6 space-y-5 pl-8">
-          <span className="absolute left-[11px] top-2 w-0.5 rounded bg-line" style={{ height: 'calc(100% - 16px)' }} aria-hidden />
-          <span
-            className="absolute left-[11px] top-2 w-0.5 rounded bg-gradient-to-b from-crit via-warn to-brand transition-all duration-1000"
-            style={{ height: step < 0 ? 0 : `calc(${((step + 0.4) / RCA_STEPS.length) * 100}% - 8px)` }}
-            aria-hidden
-          />
-          {RCA_STEPS.map((s, i) => (
-            <li key={s.t} className={`relative transition-all duration-500 ${i <= step ? 'translate-x-0 opacity-100' : 'translate-x-3 opacity-0'}`}>
-              <span
-                className={`absolute -left-8 top-1 grid size-6 place-items-center rounded-full border-2 ${s.kind === 'root' ? 'border-crit bg-crit/15' : s.kind === 'end' ? 'border-brand bg-brand/15' : 'border-warn bg-warn/15'}`}
-                aria-hidden
-              >
-                <span className={`size-2 rounded-full ${s.kind === 'root' ? 'bg-crit' : s.kind === 'end' ? 'bg-brand' : 'bg-warn'}`} />
+        <ol className="mt-6 border-t-[1.5px] border-ink">
+          {t.steps.map((s, i) => (
+            <li key={s.t} className={`grid grid-cols-[4.5rem_1rem_1fr] items-start gap-3 border-b border-ink/20 py-4 transition-all duration-500 ${i <= step ? 'opacity-100' : 'opacity-0'}`}>
+              <span className="num font-mono text-[0.875rem] font-semibold">{s.t}</span>
+              <span className={`mt-1.5 size-3 ${KIND[s.kind]}`} aria-hidden />
+              <span>
+                <span className="block font-semibold">{s.node}</span>
+                <span className="mt-0.5 block text-[0.9375rem] text-ink-2">{s.text}</span>
               </span>
-              <div className="flex flex-wrap items-baseline gap-x-3">
-                <span className="num font-mono text-[13px] text-faint">{s.t}</span>
-                <span className="font-semibold">{s.node}</span>
-              </div>
-              <p className="mt-0.5 text-[15px] text-muted">{s.text}</p>
             </li>
           ))}
         </ol>
-        <p className="mt-6 text-[12px] text-faint">Exemplo com a rede simulada da demonstração.</p>
+        <p className="mt-4 text-[0.8125rem] text-ink-2">{t.note}</p>
       </div>
-      <div className={`card p-5 transition-all duration-700 ${done ? 'opacity-100' : 'opacity-50'}`}>
-        <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wider text-faint">
-          <Database size={15} className="text-accent" /> Evidência por camada
-        </div>
-        <ul className="mt-5 space-y-3">
-          {LAYERS.map(([name, grain, what], i) => (
-            <li key={name} className={`flex items-center gap-3 rounded-xl border border-line p-3 transition-all duration-500 ${done ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`} style={{ transitionDelay: `${i * 150}ms` }}>
-              <span className={`grid size-10 shrink-0 place-items-center rounded-lg font-display text-[13px] font-bold ${['bg-[#b45309]/15 text-[#d97706]', 'bg-faint/15 text-muted', 'bg-warn/15 text-warn'][i]}`}>{name[0]}</span>
+      <div className={`border-[1.5px] border-ink p-5 transition-opacity duration-700 ${done ? 'opacity-100' : 'opacity-40'}`}>
+        <p className="label">{t.evidence}</p>
+        <ul className="mt-4 border-t border-ink/20">
+          {t.layers.map(([name, grain, what]) => (
+            <li key={name} className="flex items-center gap-3 border-b border-ink/20 py-3">
+              <span className="grid size-10 shrink-0 place-items-center border-[1.5px] border-ink font-mono text-[0.875rem] font-semibold">{name[0]}</span>
               <span>
-                <span className="block text-[14px] font-semibold">
-                  {name} <span className="font-normal text-faint">· {grain}</span>
+                <span className="block text-[0.9375rem] font-semibold">
+                  {name} <span className="font-normal text-ink-2">· {grain}</span>
                 </span>
-                <span className="block text-[13px] text-muted">{what}</span>
+                <span className="block text-[0.8125rem] text-ink-2">{what}</span>
               </span>
             </li>
           ))}
         </ul>
-        <div className="mt-5 rounded-xl bg-brand/10 p-3 text-[14px]">
-          <span className="font-semibold text-brand-strong">Confiança alta.</span> <span className="text-muted">Cada salto tem horário, atraso e a leitura que comprova.</span>
-        </div>
+        <p className="mt-4 text-[0.875rem]">
+          <span className="font-semibold">{t.confidence}</span> <span className="text-ink-2">{t.confidenceNote}</span>
+        </p>
       </div>
     </div>
   )

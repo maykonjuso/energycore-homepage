@@ -1,44 +1,32 @@
-import { useRef, useState } from 'react'
+// § 07 · Perguntas frequentes (details/summary nativos: teclado e leitor de tela sem esforço).
+import { useRef } from 'react'
 import { Plus } from 'lucide-react'
-import { FAQ } from '../data/content.js'
-import { revealIn, useMotion } from '../lib/motion.js'
+import { useContent } from '../data/content.js'
+import { useReveal } from '../lib/reveal.js'
+import SecHead from './SecHead.jsx'
 
 export default function Faq() {
+  const t = useContent().faq
   const ref = useRef(null)
-  const [open, setOpen] = useState(0)
-  useMotion(ref, () => revealIn(ref.current))
+  useReveal(ref)
+  const schema = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: t.items.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) }
   return (
-    <section id="perguntas" ref={ref} className="page py-24 sm:py-32" aria-labelledby="faq-titulo">
-      <div className="mx-auto max-w-[820px]">
-        <div className="text-center" data-reveal>
-          <span className="eyebrow">Perguntas frequentes</span>
-          <h2 id="faq-titulo" className="h2 mt-4">
-            O que costumam nos perguntar.
-          </h2>
-        </div>
-        <div className="mt-12 divide-y divide-line rounded-2xl border border-line bg-surface/60" data-reveal>
-          {FAQ.map((f, i) => (
-            <div key={f.q}>
-              <h3>
-                <button
-                  className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left text-[16px] font-semibold sm:px-7"
-                  aria-expanded={open === i}
-                  aria-controls={`faq-${i}`}
-                  onClick={() => setOpen(open === i ? -1 : i)}
-                >
-                  {f.q}
-                  <Plus size={18} className={`shrink-0 text-brand transition-transform duration-300 ${open === i ? 'rotate-45' : ''}`} />
-                </button>
-              </h3>
-              <div id={`faq-${i}`} className={`grid transition-all duration-300 ${open === i ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
-                <p className="overflow-hidden px-5 text-[15px] leading-relaxed text-muted sm:px-7">
-                  <span className="block pb-5">{f.a}</span>
-                </p>
-              </div>
-            </div>
+    <section ref={ref} id="perguntas" aria-labelledby="perguntas-titulo" className="border-t-[1.5px] border-ink py-20 sm:py-28">
+      <div className="faq-grid sheet grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+        <SecHead id="perguntas-titulo" no={t.no} coord={t.coord} title={t.title} />
+        <div className="border-t-[1.5px] border-ink lg:mt-0">
+          {t.items.map(([q, a]) => (
+            <details key={q} className="group border-b border-ink/25" data-reveal>
+              <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-6 py-4 text-[1.0625rem] font-semibold [&::-webkit-details-marker]:hidden">
+                {q}
+                <Plus size={20} className="shrink-0 transition-transform group-open:rotate-45" aria-hidden />
+              </summary>
+              <p className="max-w-[60ch] pb-5 text-[1rem] leading-relaxed text-ink-2">{a}</p>
+            </details>
           ))}
         </div>
       </div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
     </section>
   )
 }

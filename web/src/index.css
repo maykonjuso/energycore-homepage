@@ -2,204 +2,284 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Cores em RGB para aceitar opacidade no Tailwind (bg-brand/10). Escuro é o padrão da marca. */
+/* ==================================================================================================
+   EnergyCore · "prancha técnica"
+   Papel, tinta e um único sinal (laranja de segurança). Texto com contraste ≥ 7:1 nos dois temas.
+   Tudo em rem: o tamanho do texto acompanha o painel de acessibilidade e o navegador.
+   ================================================================================================== */
 :root {
-  --bg: 246 248 251;
-  --surface: 255 255 255;
-  --elevated: 238 242 247;
-  --line: 222 228 237;
-  --text: 12 21 38;
-  --muted: 71 85 105;
-  --faint: 96 109 131;
-  --brand: 32 106 196;
-  --brand-btn: 32 106 196;
-  --brand-strong: 29 92 176;
-  --accent: 14 165 160;
-  --ok: 22 163 74;
-  --warn: 217 119 6;
-  --crit: 220 38 38;
-  --glow: 42 120 214;
+  --paper: 239 236 229; /* #efece5 */
+  --paper-2: 230 226 216; /* #e6e2d8 */
+  --panel: 247 245 240; /* #f7f5f0 */
+  --ink: 21 19 15; /* #15130f · 15,7:1 */
+  --ink-2: 69 65 58; /* #45413a · 8,6:1 */
+  --rule: 21 19 15;
+  --signal: 217 72 15; /* #d9480f · linhas e preenchimentos */
+  --signal-text: 122 42 13; /* #7a2a0d · texto ≥ 7:1 */
+  --ok: 21 82 50;
+  --warn: 122 82 0;
+  --crit: 139 21 21;
   color-scheme: light;
 }
 .dark {
-  --bg: 7 12 20;
-  --surface: 13 20 33;
-  --elevated: 19 28 45;
-  --line: 33 45 66;
-  --text: 232 238 246;
-  --muted: 160 174 196;
-  --faint: 134 149 172;
-  --brand: 72 149 239;
-  --brand-btn: 37 99 235;
-  --brand-strong: 120 178 245;
-  --accent: 45 212 191;
-  --ok: 74 222 128;
-  --warn: 251 191 36;
-  --crit: 248 113 113;
-  --glow: 59 130 246;
+  --paper: 16 15 13; /* #100f0d */
+  --paper-2: 26 25 22;
+  --panel: 21 20 18;
+  --ink: 236 233 225;
+  --ink-2: 189 184 173;
+  --rule: 236 233 225;
+  --signal: 255 122 61;
+  --signal-text: 255 140 85;
+  --ok: 127 212 155;
+  --warn: 242 184 75;
+  --crit: 255 138 128;
   color-scheme: dark;
+}
+/* Alto contraste (painel de acessibilidade) */
+html[data-contrast='high'] {
+  --paper: 255 255 255;
+  --paper-2: 255 255 255;
+  --panel: 255 255 255;
+  --ink: 0 0 0;
+  --ink-2: 0 0 0;
+  --signal: 160 40 0;
+  --signal-text: 120 30 0;
+}
+html.dark[data-contrast='high'] {
+  --paper: 0 0 0;
+  --paper-2: 0 0 0;
+  --panel: 0 0 0;
+  --ink: 255 255 255;
+  --ink-2: 255 255 255;
+  --signal: 255 214 0;
+  --signal-text: 255 214 0;
+}
+html[data-contrast='high'] a:not(.btn) {
+  text-decoration: underline;
 }
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 84px;
+  scroll-padding-top: 5rem;
 }
 body {
-  @apply bg-bg font-sans text-text antialiased;
-  text-rendering: optimizeLegibility;
+  @apply bg-paper font-sans text-ink antialiased;
+  font-size: 1rem;
+  line-height: 1.6;
 }
 ::selection {
-  background: rgb(var(--brand) / 0.25);
+  background: rgb(var(--signal) / 0.3);
+}
+:focus-visible {
+  outline: 2px solid rgb(var(--ink));
+  outline-offset: 3px;
+}
+html[data-motion='off'] {
+  scroll-behavior: auto;
+}
+html[data-motion='off'] *,
+html[data-motion='off'] *::before,
+html[data-motion='off'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }
 
 .skip-link {
   position: absolute;
-  left: 12px;
-  top: -60px;
+  left: 0.75rem;
+  top: -5rem;
   z-index: 100;
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: rgb(var(--brand));
-  color: white;
+  padding: 0.6rem 0.9rem;
+  background: rgb(var(--ink));
+  color: rgb(var(--paper));
   font-weight: 600;
+  text-decoration: underline;
 }
 .skip-link:focus {
-  top: 12px;
+  top: 0.75rem;
 }
 
 @layer components {
-  .page {
-    @apply mx-auto w-full max-w-page px-5 sm:px-8;
+  .sheet {
+    @apply mx-auto w-full max-w-sheet px-5 sm:px-8 lg:px-12;
   }
-  .eyebrow {
-    @apply inline-flex items-center gap-2 rounded-full border border-line bg-surface/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-brand-strong backdrop-blur sm:text-[12px] sm:tracking-[0.14em];
+  /* Rótulo técnico: mono, caixa alta, espaçado */
+  .label {
+    @apply font-mono text-[0.75rem] font-medium uppercase tracking-[0.12em] text-ink-2;
+  }
+  .display {
+    font-stretch: 112%;
+    @apply font-extrabold leading-[0.98] tracking-[-0.025em];
   }
   .h2 {
-    @apply font-display text-[32px] font-bold leading-[1.1] tracking-tight sm:text-[44px];
+    font-stretch: 108%;
+    @apply text-[2.1rem] font-extrabold leading-[1.02] tracking-[-0.02em] sm:text-[3rem];
   }
   .lead {
-    @apply text-[17px] leading-relaxed text-muted sm:text-[19px];
+    @apply text-[1.0625rem] leading-relaxed text-ink-2 sm:text-[1.1875rem];
   }
   .btn {
-    @apply inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-[15px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-50;
+    @apply inline-flex min-h-12 items-center justify-center gap-2.5 px-5 text-[0.9375rem] font-semibold transition-colors;
   }
-  .btn-primary {
-    @apply btn bg-brandbtn text-white shadow-[0_10px_30px_-10px_rgb(var(--glow)/0.8)] hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_16px_40px_-12px_rgb(var(--glow)/0.9)];
+  .btn-ink {
+    @apply btn bg-ink text-paper hover:bg-signal hover:text-ink;
   }
-  .btn-ghost {
-    @apply btn border border-line bg-surface/60 text-text backdrop-blur hover:-translate-y-0.5 hover:border-brand/50;
+  .btn-line {
+    @apply btn border-[1.5px] border-ink text-ink hover:bg-ink hover:text-paper;
   }
-  .card {
-    @apply rounded-2xl border border-line bg-surface/80 shadow-[0_1px_0_rgb(255_255_255/0.04)_inset,0_20px_50px_-30px_rgb(0_0_0/0.5)] backdrop-blur;
+  .panel {
+    @apply border border-rule/20 bg-panel;
   }
   .field {
-    @apply h-12 w-full rounded-xl border border-line bg-surface px-3.5 text-[15px] text-text outline-none transition placeholder:text-faint focus:border-brand focus:ring-4 focus:ring-brand/15;
+    @apply min-h-12 w-full border-0 border-b-[1.5px] border-ink/60 bg-transparent px-0 text-[1rem] text-ink outline-none transition-colors placeholder:text-ink-2 focus:border-signal;
   }
   .num {
     font-variant-numeric: tabular-nums;
   }
-}
-
-/* Moldura de navegador para as telas do produto */
-.frame {
-  @apply overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_40px_120px_-40px_rgb(var(--glow)/0.55),0_20px_60px_-30px_rgb(0_0_0/0.6)];
-}
-.frame-bar {
-  @apply flex items-center gap-1.5 border-b border-line bg-elevated/80 px-4 py-2.5;
-}
-.frame-bar i {
-  @apply block size-2.5 rounded-full bg-line;
-}
-
-/* Grade e brilho de fundo */
-.grid-bg {
-  background-image: linear-gradient(rgb(var(--line) / 0.55) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--line) / 0.55) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
-}
-.glow {
-  background: radial-gradient(closest-side, rgb(var(--glow) / 0.35), transparent);
-  filter: blur(20px);
-}
-
-/* Profundidade (epic-design): só transform/opacity/filter animam */
-[data-depth] {
-  will-change: auto;
-}
-.float-loop {
-  animation: float 9s ease-in-out infinite;
-}
-.float-loop-slow {
-  animation: float 13s ease-in-out infinite;
-}
-@keyframes float {
-  50% {
-    transform: translateY(-10px);
+  /* Marca-texto: um traço laranja grosso sob a palavra (sem gradiente de cor no texto) */
+  .marker {
+    /* Régua laranja sólida sob a frase: nítida nos dois temas */
+    background: linear-gradient(rgb(var(--signal)), rgb(var(--signal))) no-repeat 0 92% / 100% 0.12em;
+    padding-bottom: 0.04em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
   }
 }
-.pulse-ring {
-  animation: pulse-ring 2.4s ease-out infinite;
-  transform-box: fill-box;
-  transform-origin: center;
+
+/* Cabeçalho de seção: número, título e coordenada da prancha, com régua por cima */
+.sec-head {
+  @apply grid gap-4 border-t-[1.5px] border-ink pt-5 md:grid-cols-[9rem_1fr_auto] md:gap-8;
 }
-@keyframes pulse-ring {
-  0% {
-    transform: scale(0.7);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(2.4);
-    opacity: 0;
-  }
+
+/* Moldura de tela com marcas de corte nos cantos */
+.crop {
+  position: relative;
+  padding: 0.75rem;
 }
-.dash-flow {
-  stroke-dasharray: 6 8;
-  animation: dash 1.2s linear infinite;
+.crop::before,
+.crop::after,
+.crop > .crop-b::before,
+.crop > .crop-b::after {
+  content: '';
+  position: absolute;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-color: rgb(var(--ink));
+  border-style: solid;
+  pointer-events: none;
 }
-@keyframes dash {
+.crop::before {
+  left: 0;
+  top: 0;
+  border-width: 1.5px 0 0 1.5px;
+}
+.crop::after {
+  right: 0;
+  top: 0;
+  border-width: 1.5px 1.5px 0 0;
+}
+.crop > .crop-b::before {
+  left: 0;
+  bottom: 0;
+  border-width: 0 0 1.5px 1.5px;
+}
+.crop > .crop-b::after {
+  right: 0;
+  bottom: 0;
+  border-width: 0 1.5px 1.5px 0;
+}
+
+/* Régua de coordenadas */
+.ticks {
+  background-image: repeating-linear-gradient(90deg, rgb(var(--ink) / 0.55) 0 1px, transparent 1px 2.5rem);
+  height: 0.5rem;
+}
+
+/* Diagrama unifilar do topo: corrente correndo nas linhas e a falha piscando */
+@keyframes flow {
   to {
     stroke-dashoffset: -28;
   }
 }
-.marquee {
-  animation: marquee 38s linear infinite;
+.wire-flow {
+  stroke-dasharray: 2 12;
+  animation: flow 1.1s linear infinite;
 }
-@keyframes marquee {
+@keyframes blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+.fault-blink {
+  animation: blink 0.9s steps(2, start) infinite;
+}
+
+/* Faixa de leituras (pausa ao passar o mouse ou focar) */
+@keyframes slide {
   to {
     transform: translateX(-50%);
   }
 }
+.readout-track {
+  animation: slide 48s linear infinite;
+}
+.readout:hover .readout-track,
+.readout:focus-within .readout-track,
+.readout[data-paused='true'] .readout-track {
+  animation-play-state: paused;
+}
 
-/* Estados iniciais das revelações (o JS anima; sem JS ou com movimento reduzido, tudo aparece) */
-.js-motion [data-reveal] {
+/* Revelação ao rolar: só some o que ainda está abaixo da tela quando a página abre (sem JS, tudo aparece) */
+[data-reveal] {
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+[data-reveal].is-pre {
   opacity: 0;
-  transform: translateY(26px);
-}
-.word-light {
-  /* Apagada, mas legível (contraste ≥ 3:1 para texto grande); acende com a rolagem. */
-  color: rgb(var(--faint));
-  opacity: 0.75;
-  transition: color 0.3s;
-}
-.word-light.on {
-  color: rgb(var(--text));
-  opacity: 1;
+  transform: translateY(1rem);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+/* Texto dentro dos desenhos (SVG): contorno na cor do papel para não sumir sobre as linhas */
+svg text.halo,
+.svg-halo text {
+  paint-order: stroke;
+  stroke: rgb(var(--paper));
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+/* Texto ampliado (125% a 200%): a barra do topo fica no formato do celular, sem rolagem lateral. */
+html[data-large] .nav-desktop,
+html[data-large] .nav-cta,
+html[data-large] .nav-theme-btn {
+  display: none !important;
+}
+html[data-large] .nav-burger,
+html[data-large] .nav-mobile {
+  display: grid !important;
+}
+html[data-large] .nav-mobile {
+  display: block !important;
+}
+html[data-large] .nav-theme,
+html[data-large] .nav-cta-mobile {
+  display: list-item !important;
+}
+
+/* Telas muito estreitas: só o símbolo da marca na barra (o nome continua para leitores de tela). */
+@media (max-width: 24rem) {
+  .wm-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
-  .js-motion [data-reveal] {
-    opacity: 1 !important;
-    transform: none !important;
-  }
-  .word-light {
-    color: rgb(var(--text));
-  }
+}
+html[data-large] .faq-grid,
+html[data-large] .sec-head {
+  grid-template-columns: minmax(0, 1fr);
 }

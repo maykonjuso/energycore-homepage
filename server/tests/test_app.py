@@ -89,3 +89,10 @@ def test_assistant_uses_claude_when_configured(client, monkeypatch):
 def test_security_headers(client):
     h = client.get("/api/health").headers
     assert h["x-frame-options"] == "DENY" and "frame-ancestors 'none'" in h["content-security-policy"]
+
+
+def test_assistant_answers_in_english_when_asked(client):
+    r = client.post("/api/assistant", json={"lang": "en", "messages": [{"role": "user", "content": "How does failure simulation work?"}]})
+    assert r.status_code == 200
+    body = r.json()
+    assert "simulate" in body["reply"].lower() and "falha" in body["demos"]

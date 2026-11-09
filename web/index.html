@@ -3,28 +3,35 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EnergyCore · Operação de datacenters e redes telecom em uma só plataforma</title>
-    <meta name="description" content="Monitoramento de energia do datacenter, rede telecom com topologia, simulação de falha e causa raiz, alarmes, agente de IA e controle de acesso até o dispositivo." />
-    <meta property="og:title" content="EnergyCore · Infraestrutura crítica sob controle" />
-    <meta property="og:description" content="Datacenter e telecom em uma só plataforma: energia, alarmes, topologia, causa raiz, IA e acesso granular." />
-    <meta property="og:image" content="%BASE_URL%produto/overview-dark.webp" />
+    <title>EnergyCore · Energia do datacenter e rede telecom numa leitura só</title>
+    <meta name="description" content="Monitoramento de energia do datacenter e da rede de telecom na mesma plataforma: alarmes, topologia, simulação de falha, causa raiz, agente de IA e controle de acesso até o dispositivo." />
+    <meta property="og:title" content="EnergyCore · Do disjuntor ao cliente final, numa leitura só" />
+    <meta property="og:description" content="Energia do datacenter e rede de telecom na mesma plataforma. O que está acontecendo, onde começou e quem foi afetado." />
+    <meta property="og:image" content="%BASE_URL%produto/overview-light.webp" />
     <meta property="og:locale" content="pt_BR" />
-    <meta name="theme-color" content="#070c14" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta name="theme-color" content="#efece5" />
     <link rel="icon" href="%BASE_URL%brand/mark.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <script>
-      // Tema antes de pintar a página (sem piscar): escolha salva ou a do sistema.
+      // Antes de pintar (sem piscar): tema, idioma e acessibilidade guardados neste navegador.
       try {
+        var el = document.documentElement
         var t = localStorage.getItem('ec-site-theme')
-        if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches) || !t) document.documentElement.classList.add('dark')
-        if (t === 'light') document.documentElement.classList.remove('dark')
-      } catch (e) { document.documentElement.classList.add('dark') }
+        if (t === 'dark') el.classList.add('dark')
+        var l = localStorage.getItem('ec-site-lang') || ((navigator.language || 'pt').toLowerCase().indexOf('pt') === 0 ? 'pt' : 'en')
+        el.lang = l === 'en' ? 'en' : 'pt-BR'
+        var a = JSON.parse(localStorage.getItem('ec-site-a11y') || '{}')
+        if (a.text && a.text !== 100) el.style.fontSize = a.text + '%'
+        if (a.text >= 125) el.dataset.large = 'on'
+        if (a.contrast) el.dataset.contrast = 'high'
+        if (a.motion === false || matchMedia('(prefers-reduced-motion: reduce)').matches) el.dataset.motion = 'off'
+      } catch (e) {}
     </script>
   </head>
   <body>
-    <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

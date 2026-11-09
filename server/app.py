@@ -112,6 +112,7 @@ class ContactIn(BaseModel):
     consent: bool
     website: str = Field("", max_length=200)  # armadilha para robôs: fica escondida no formulário
     elapsed_ms: int = Field(0, ge=0)  # tempo entre abrir e enviar o formulário
+    lang: Literal["pt", "en"] = "pt"  # idioma em que a pessoa preencheu
 
     @field_validator("email")
     @classmethod
@@ -192,6 +193,7 @@ class ChatTurn(BaseModel):
 
 class AssistantIn(BaseModel):
     messages: list[ChatTurn] = Field(min_length=1, max_length=16)
+    lang: Literal["pt", "en"] = "pt"  # idioma do site: a resposta vem nele
 
 
 SYSTEM = f"""Você é o assistente da homepage da EnergyCore Consulting. Responda em português do Brasil, em até 120 palavras, com frases curtas e tom profissional e próximo.
@@ -226,13 +228,13 @@ def anthropic_client():
     return _client
 
 
-async def ask_claude(history: list[dict]) -> dict:
+async def ask_claude(history: list[dict], lang: str = "pt") -> dict:
     import anthropic
     try:
         response = await anthropic_client().beta.messages.create(
             model=MODEL,
             max_tokens=4096,
-            system=SYSTEM,
+            system=SYSTEM if lang == "pt" else SYSTEM + "\n\nThe visitor is reading the English version of the site: answer in English (keep product names), up to 120 words.",
             cache_control={"type": "ephemeral"},  # a base de conhecimento é igual em toda pergunta
             output_config={"effort": "low", "format": {"type": "json_schema", "schema": SCHEMA}},
             betas=["server-side-fallback-2026-07-01"],
@@ -243,17 +245,18 @@ async def ask_claude(history: list[dict]) -> dict:
         raise HTTPException(503, "O assistente está ocupado agora. Tente de novo em instantes.")
     except anthropic.APIStatusError as e:
         log.warning("Assistente: erro %s (%s)", e.status_code, getattr(e, "request_id", ""))
-        return local_answer(history[-1]["content"])
+        return local_answer(history[-1]["content"], lang)
     except anthropic.APIConnectionError:
-        return local_answer(history[-1]["content"])
+        return local_answer(history[-1]["content"], lang)
     if response.stop_reason == "refusal":
-        return {"reply": "Não posso ajudar com isso aqui. Para outros assuntos, fale com a equipe pelo contato.", "demos": ["contato"],
+        return {"reply": "Não posso ajudar com isso aqui. Para outros assuntos, fale com a equipe pelo contato." if lang == "pt"
+                else "I can't help with that here. For anything else, please reach the team through the contact form.", "demos": ["contato"],
                 "followups": [], "source": "claude"}
     text = next((b.text for b in response.content if b.type == "text"), "")
     try:
         data = json.loads(text)
     except json.JSONDecodeError:
-        return local_answer(history[-1]["content"])
+        return local_answer(history[-1]["content"], lang)
     data["demos"] = [d for d in data.get("demos", []) if d in DEMOS][:2]
     data["followups"] = [f for f in data.get("followups", []) if isinstance(f, str)][:3]
     return {**data, "source": "claude"}
@@ -284,13 +287,38 @@ LOCAL = [
 ]
 
 
-def local_answer(question: str) -> dict:
+# Mesmas respostas em inglês (mesma ordem de LOCAL) e palavras-chave em inglês para casar perguntas.
+LOCAL_EN = [
+    (("active directory", "ldap", "sso", "company login"), "Yes. Sign-in can use the Active Directory account (LDAPS or StartTLS): the account is created on first sign-in, AD groups become EnergyCore profiles, the photo comes from AD and the sync disables people who left the company."),
+    (("phone", "mobile", "app", "tablet", "tv"), "Nothing to install: the platform runs in the browser, phones included, and has a TV mode that cycles overview, alarms and trends on the operations room screen."),
+    (("vendor", "vendors", "brand", "protocol", "compatible", "compatibility"), "Yes, it works with many vendors: collection uses standard protocols and integrations (such as SNMP, Modbus and APIs), and the assessment confirms each device before the pilot."),
+    (("cloud", "on premise", "on-premise", "hosting", "where", "retention"), "The platform can run in your own environment or in the cloud. This is decided during the assessment, together with the data retention policy."),
+    (("price", "cost", "pricing", "quote", "proposal", "plan"), "We do not publish pricing because each project is sized by the number of sites, devices and integrations. Through the contact form, the team prepares a proposal for your setup."),
+    (("try", "test", "demo", "trial"), "You can see the main screens right here, in the test bench. To use the full demo with simulated data, request access through the contact form."),
+    (("root cause", "rca", "why", "origin", "spread"), "Root cause analysis detects the incident, points to where it started, shows how it spread hop by hop and the evidence in each data layer, with a confidence level."),
+    (("failure", "simulate", "simulation", "impact", "isolated"), "In the topology you pick a node or link and simulate a failure: the system shows what gets isolated, what loses redundancy, the sites and how many customers are affected."),
+    (("topology", "network", "telecom", "olt", "enodeb", "noc", "lineage"), "For telecom, the platform shows the topology (core, metro, access and customers), upstream and downstream lineage, each device's panel and failure simulation."),
+    (("alarm", "alert", "incident", "notification"), "Every reading is checked against adjustable thresholds. Alarms have severity, acknowledgement with a comment, history, grouped incidents and a TV mode for the operations room."),
+    (("permission", "access", "profile", "group", "rbac", "audit"), "Access control goes down to the device: pages, actions and scope (unit, region, site or device), groups, allow and deny, API tokens, a full audit trail and Active Directory sign-in."),
+    (("ai", "agent", "chat", "mcp", "ask"), "The AI agent answers in plain language and queries real data through tools: topology, health, failure simulation, root cause and reports, always citing its sources."),
+    (("trend", "chart", "report", "export", "dashboard", "csv"), "In trends you compare readings on the same axis, see the previous period, annotate and save views. There are drag-and-drop dashboards, cost allocation, reports and CSV export."),
+    (("power", "energy", "pue", "ups", "rack", "datacenter", "cooling", "sensor", "switchboard"), "In the datacenter we follow power from the utility down to each rack: switchboards, UPS units, cooling, sensors and PDUs, sampled every 5 seconds, with metrics such as PUE and runtime."),
+    (("rollout", "deploy", "implementation", "timeline", "pilot", "integrate", "snmp", "modbus"), "The rollout has three steps: assessment of sites and integrations, a pilot on one site or region with the team using it, and scale to the remaining sites with permissions and training."),
+    (("security", "lgpd", "gdpr", "personal data", "password", "privacy"), "Sessions in a protected cookie, lockout after failed attempts, hashed passwords, tokens shown only once, masked personal IDs and a full audit trail. The contact form asks for consent (LGPD)."),
+]
+
+
+def local_answer(question: str, lang: str = "pt") -> dict:
     q = _plain(question)
     words = re.findall(r"\w+", q)
     # Palavra inteira ou começo de palavra ("ia" não casa com "bom dia"); expressões com espaço, por trecho.
     hit = lambda k: k in q if " " in k else any(w == k or (len(k) >= 4 and w.startswith(k)) for w in words)  # noqa: E731
-    scored = sorted(((sum(hit(k) for k in keys), reply, demos) for keys, reply, demos in LOCAL), key=lambda x: -x[0])
+    table = LOCAL if lang == "pt" else [(en_keys + keys, en_reply, demos) for (keys, _, demos), (en_keys, en_reply) in zip(LOCAL, LOCAL_EN)]
+    scored = sorted(((sum(hit(k) for k in keys), reply, demos) for keys, reply, demos in table), key=lambda x: -x[0])
     best = scored[0]
+    if best[0] == 0 and lang == "en":
+        return {"reply": "I can explain power monitoring, alarms, the telecom network (topology, failure simulation and root cause), the AI agent, access control or the rollout. What would you like to know?",
+                "demos": [], "followups": ["How does failure simulation work?", "What does access control allow?", "What does the rollout look like?"], "source": "local"}
     if best[0] == 0:
         return {"reply": "Posso explicar o monitoramento de energia, os alarmes, a rede telecom (topologia, simulação de falha e causa raiz), o agente de IA, o controle de acesso ou a implantação. Sobre o que você quer saber?",
                 "demos": [], "followups": ["Como funciona a simulação de falha?", "O que o controle de acesso permite?", "Como é a implantação?"], "source": "local"}
@@ -306,8 +334,8 @@ async def assistant(body: AssistantIn, request: Request) -> dict:
     while history and history[0]["role"] != "user":
         history.pop(0)
     if os.getenv("ANTHROPIC_API_KEY"):
-        return await ask_claude(history)
-    return local_answer(history[-1]["content"])
+        return await ask_claude(history, body.lang)
+    return local_answer(history[-1]["content"], body.lang)
 
 
 # --- site compilado ---------------------------------------------------------------------------------------

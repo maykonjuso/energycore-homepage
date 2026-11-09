@@ -15,35 +15,22 @@ export function setTheme(dark) {
 }
 
 export function useTheme() {
-  const dark = useSyncExternalStore((l) => (themeListeners.add(l), () => themeListeners.delete(l)), isDark, () => true)
+  const dark = useSyncExternalStore((l) => (themeListeners.add(l), () => themeListeners.delete(l)), isDark, () => false)
   return [dark, () => setTheme(!dark)]
 }
 
-// Para onde rolar em cada demo pedida pelo assistente.
+// Para onde rolar em cada demo pedida pelo assistente (a seção reage ao evento e abre a aba certa).
 export const DEMO_TARGET = {
   monitoramento: 'plataforma',
   alarmes: 'plataforma',
-  topologia: 'demo-rede',
-  falha: 'demo-rede',
-  'causa-raiz': 'demo-rca',
   tendencias: 'plataforma',
-  agente: 'demo-agente',
-  acessos: 'demo-acessos',
+  topologia: 'bancada',
+  falha: 'bancada',
+  'causa-raiz': 'bancada',
+  agente: 'bancada',
+  acessos: 'bancada',
   implantacao: 'implantacao',
   contato: 'contato',
-}
-
-export const DEMO_LABEL = {
-  monitoramento: 'Ver o monitoramento de energia',
-  alarmes: 'Ver alarmes e incidentes',
-  topologia: 'Explorar a topologia',
-  falha: 'Simular uma falha',
-  'causa-raiz': 'Ver a causa raiz',
-  tendencias: 'Ver tendências',
-  agente: 'Ver o agente de IA',
-  acessos: 'Testar o controle de acesso',
-  implantacao: 'Como é a implantação',
-  contato: 'Falar com a equipe',
 }
 
 export function showDemo(id) {

@@ -1,44 +1,57 @@
-// Contato: envia para contato@energycoreconsulting.com.br pelo servidor (com confirmação para a pessoa).
-// Proteção contra robôs: campo escondido e tempo mínimo de preenchimento. Consentimento LGPD obrigatório.
+// § 08 · Contato: envia pelo servidor (com confirmação para a pessoa). No site estático (GitHub Pages),
+// abre o e-mail de quem escreve já preenchido. Proteção contra robôs: campo escondido e tempo mínimo. LGPD.
 import { useRef, useState } from 'react'
-import { CheckCircle2, Clock, Mail, Send, ShieldCheck } from 'lucide-react'
-import { FOOTER } from '../data/content.js'
-import { revealIn, useMotion } from '../lib/motion.js'
-import { useDemoEvent } from '../lib/site.js'
+import { ArrowRight, Check } from 'lucide-react'
+import { EMAIL, useContent } from '../data/content.js'
 import { STATIC, api } from '../lib/env.js'
+import { useLang } from '../lib/i18n.js'
+import { useReveal } from '../lib/reveal.js'
+import { useDemoEvent } from '../lib/site.js'
+import SecHead from './SecHead.jsx'
 
-// Site estático (GitHub Pages): sem servidor, a mensagem abre no e-mail de quem escreve, já preenchida.
-function mailto(f) {
-  const topic = TOPICS.find(([v]) => v === f.topic)?.[1] ?? f.topic
-  const extra = [['Empresa', f.company], ['Cargo', f.role], ['Telefone', f.phone]].filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`)
-  const lines = [f.message, '', `Nome: ${f.name}`, `E-mail: ${f.email}`, ...extra]
-  return `mailto:${FOOTER.email}?subject=${encodeURIComponent(`[Site] ${topic} · ${f.company || f.name}`)}&body=${encodeURIComponent(lines.join('\n'))}`
-}
-
-const TOPICS = [
-  ['demonstracao', 'Quero uma demonstração'],
-  ['proposta', 'Pedir proposta'],
-  ['datacenter', 'Datacenter'],
-  ['telecom', 'Telecom'],
-  ['parceria', 'Parceria'],
-  ['outro', 'Outro assunto'],
-]
 const EMPTY = { name: '', email: '', company: '', role: '', phone: '', topic: 'demonstracao', message: '', consent: false, website: '' }
 
+function mailto(f, t) {
+  const topic = t.topics.find(([v]) => v === f.topic)?.[1] ?? f.topic
+  const L = t.bodyLabels
+  const extra = [[L.company, f.company], [L.role, f.role], [L.phone, f.phone]].filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`)
+  const body = [f.message, '', `${L.name}: ${f.name}`, `${L.email}: ${f.email}`, ...extra].join('\n')
+  return `mailto:${EMAIL}?subject=${encodeURIComponent(t.subject(topic, f.company || f.name))}&body=${encodeURIComponent(body)}`
+}
+
+function Field({ label, required, req, children, wide }) {
+  return (
+    <label className={`block ${wide ? 'sm:col-span-2' : ''}`}>
+      <span className="label flex gap-1.5">
+        {label}
+        {required && (
+          <span className="text-signal-text" aria-hidden>
+            *
+          </span>
+        )}
+        {required && <span className="sr-only">({req})</span>}
+      </span>
+      {children}
+    </label>
+  )
+}
+
 export default function Contact() {
+  const t = useContent().contact
+  const lang = useLang()
   const ref = useRef(null)
+  useReveal(ref)
   const opened = useRef(Date.now())
   const [f, setF] = useState(EMPTY)
-  const [state, setState] = useState('idle') // idle | sending | sent | error
+  const [state, setState] = useState('idle')
   const [error, setError] = useState('')
-  useMotion(ref, () => revealIn(ref.current))
-  useDemoEvent((id) => id === 'contato' && setTimeout(() => ref.current?.querySelector('input[name=name]')?.focus({ preventScroll: true }), 900))
+  useDemoEvent((id) => id === 'contato' && setTimeout(() => ref.current?.querySelector('input[name=name]')?.focus({ preventScroll: true }), 800))
   const set = (k) => (e) => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value })
   const submit = async (e) => {
     e.preventDefault()
     setError('')
     if (STATIC) {
-      window.location.href = mailto(f)
+      window.location.href = mailto(f, t)
       setState('sent')
       return
     }
@@ -47,127 +60,119 @@ export default function Contact() {
       const res = await fetch(api('/api/contact'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...f, elapsed_ms: Date.now() - opened.current }),
+        body: JSON.stringify({ ...f, lang, elapsed_ms: Date.now() - opened.current }),
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        throw new Error(typeof body.detail === 'string' ? body.detail : 'Confira os campos e tente de novo.')
+        throw new Error(typeof body.detail === 'string' ? body.detail : t.errorGeneric)
       }
       setState('sent')
     } catch (err) {
       setState('error')
-      setError(err.message === 'Failed to fetch' ? `Não conseguimos enviar agora. Escreva para ${FOOTER.email}.` : err.message)
+      setError(err.message === 'Failed to fetch' ? t.errorOffline(EMAIL) : err.message)
     }
   }
+  const first = f.name.split(' ')[0]
   return (
-    <section id="contato" ref={ref} className="relative overflow-hidden py-24 sm:py-32" aria-labelledby="contato-titulo">
-      <div className="grid-bg absolute inset-0 -z-10 opacity-40" aria-hidden />
-      <div className="page grid gap-12 lg:grid-cols-[1fr_1.2fr]">
-        <div data-reveal>
-          <span className="eyebrow">Contato</span>
-          <h2 id="contato-titulo" className="h2 mt-4">
-            Vamos olhar para a sua operação.
-          </h2>
-          <p className="lead mt-4">Conte um pouco do cenário. Respondemos em até 1 dia útil com os próximos passos: demonstração, diagnóstico ou proposta.</p>
-          <ul className="mt-10 space-y-5">
-            {[
-              [Mail, 'E-mail', <a key="m" href={`mailto:${FOOTER.email}`} className="hover:text-brand">{FOOTER.email}</a>],
-              [Clock, 'Resposta', 'Em até 1 dia útil'],
-              [ShieldCheck, 'Privacidade', 'Seus dados são usados só para responder a este contato.'],
-            ].map(([Icon, k, v]) => (
-              <li key={k} className="flex gap-3">
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand">
-                  <Icon size={18} />
-                </span>
-                <span>
-                  <span className="block text-[13px] text-faint">{k}</span>
-                  <span className="block font-medium">{v}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="card p-6 sm:p-8" data-reveal>
-          {state === 'sent' ? (
-            <div className="flex min-h-[420px] flex-col items-center justify-center text-center" role="status">
-              <CheckCircle2 size={48} className="text-ok" />
-              <h3 className="mt-4 font-display text-[24px] font-bold">{STATIC ? 'Mensagem pronta no seu e-mail.' : 'Mensagem enviada.'}</h3>
-              <p className="mt-2 max-w-sm text-muted">
-                {STATIC ? (
-                  <>
-                    Obrigado, {f.name.split(' ')[0]}. Abrimos o seu aplicativo de e-mail com a mensagem preenchida: é só enviar. Se não abriu, escreva para{' '}
-                    <a className="text-brand hover:underline" href={`mailto:${FOOTER.email}`}>
-                      {FOOTER.email}
-                    </a>
-                    .
-                  </>
-                ) : (
-                  <>Obrigado, {f.name.split(' ')[0]}. Mandamos uma confirmação para {f.email} e respondemos em até 1 dia útil.</>
-                )}
+    <section ref={ref} id="contato" aria-labelledby="contato-titulo" className="border-t-[1.5px] border-ink bg-paper-2 py-20 sm:py-28">
+      <div className="sheet">
+        <SecHead id="contato-titulo" no={t.no} coord={t.coord} title={t.title} lead={t.lead} />
+        <div className="mt-12 grid gap-12 lg:grid-cols-[1fr_1.6fr]">
+          <div className="space-y-6 border-t-[1.5px] border-ink pt-6" data-reveal>
+            <div>
+              <p className="label">{t.emailLabel}</p>
+              <p className="mt-1 text-[1.125rem] font-semibold">
+                <a href={`mailto:${EMAIL}`} className="break-all underline decoration-signal decoration-2 underline-offset-4 hover:text-signal-text">
+                  {EMAIL}
+                </a>
               </p>
-              <button className="btn-ghost mt-6" onClick={() => (setF(EMPTY), setState('idle'), (opened.current = Date.now()))}>
-                Enviar outra mensagem
-              </button>
             </div>
-          ) : (
-            <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2" noValidate={false}>
-              <label className="block space-y-1.5">
-                <span className="text-[13px] font-medium text-muted">Nome *</span>
-                <input name="name" required minLength={3} maxLength={120} autoComplete="name" value={f.name} onChange={set('name')} className="field" />
-              </label>
-              <label className="block space-y-1.5">
-                <span className="text-[13px] font-medium text-muted">E-mail corporativo *</span>
-                <input name="email" type="email" required autoComplete="email" value={f.email} onChange={set('email')} className="field" />
-              </label>
-              <label className="block space-y-1.5">
-                <span className="text-[13px] font-medium text-muted">Empresa *</span>
-                <input name="company" required minLength={2} maxLength={120} autoComplete="organization" value={f.company} onChange={set('company')} className="field" />
-              </label>
-              <label className="block space-y-1.5">
-                <span className="text-[13px] font-medium text-muted">Cargo</span>
-                <input name="role" maxLength={80} autoComplete="organization-title" value={f.role} onChange={set('role')} className="field" />
-              </label>
-              <label className="block space-y-1.5">
-                <span className="text-[13px] font-medium text-muted">Telefone</span>
-                <input name="phone" type="tel" maxLength={30} autoComplete="tel" value={f.phone} onChange={set('phone')} className="field" placeholder="(11) 90000-0000" />
-              </label>
-              <label className="block space-y-1.5">
-                <span className="text-[13px] font-medium text-muted">Assunto</span>
-                <select name="topic" value={f.topic} onChange={set('topic')} className="field">
-                  {TOPICS.map(([v, l]) => (
-                    <option key={v} value={v}>
-                      {l}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block space-y-1.5 sm:col-span-2">
-                <span className="text-[13px] font-medium text-muted">Mensagem *</span>
-                <textarea name="message" required minLength={10} maxLength={4000} rows={5} value={f.message} onChange={set('message')} className="field h-auto py-3" placeholder="Quantos sites, que equipamentos, o que mais incomoda hoje…" />
-              </label>
-              {/* Armadilha para robôs: pessoas não veem este campo. */}
-              <label className="absolute -left-[9999px]" aria-hidden>
-                Site
-                <input tabIndex={-1} autoComplete="off" value={f.website} onChange={set('website')} />
-              </label>
-              <label className="flex items-start gap-3 text-[14px] text-muted sm:col-span-2">
-                <input type="checkbox" required checked={f.consent} onChange={set('consent')} className="mt-1 size-4 accent-[rgb(var(--brand))]" />
-                <span>Autorizo a EnergyCore a usar estes dados para responder ao meu contato, conforme a LGPD. *</span>
-              </label>
-              {error && (
-                <p className="rounded-xl border border-crit/30 bg-crit/10 px-4 py-3 text-[14px] text-crit sm:col-span-2" role="alert">
-                  {error}
+            {[t.reply, t.privacy].map((x) => (
+              <div key={x} className="flex items-center gap-2.5 text-[0.9375rem]">
+                <span className="grid size-4 place-items-center bg-ink text-paper" aria-hidden>
+                  <Check size={11} strokeWidth={3} />
+                </span>
+                {x}
+              </div>
+            ))}
+          </div>
+          <div className="border-[1.5px] border-ink bg-panel p-6 sm:p-8" data-reveal="100">
+            {state === 'sent' ? (
+              <div className="flex min-h-[24rem] flex-col items-start justify-center" role="status">
+                <span className="grid size-12 place-items-center bg-signal text-ink" aria-hidden>
+                  <Check size={26} strokeWidth={3} />
+                </span>
+                <h3 className="mt-5 text-[1.75rem] font-bold" style={{ fontStretch: '108%' }}>
+                  {STATIC ? t.sentStaticTitle : t.sentTitle}
+                </h3>
+                <p className="mt-2 max-w-md text-ink-2">
+                  {STATIC ? (
+                    <>
+                      {t.sentStatic(first)}{' '}
+                      <a className="font-semibold underline underline-offset-4" href={`mailto:${EMAIL}`}>
+                        {EMAIL}
+                      </a>
+                      .
+                    </>
+                  ) : (
+                    t.sent(first, f.email)
+                  )}
                 </p>
-              )}
-              <button className="btn-primary sm:col-span-2" disabled={state === 'sending'}>
-                {state === 'sending' ? 'Enviando…' : (
-                  <>
-                    Enviar mensagem <Send size={16} />
-                  </>
+                <button type="button" className="btn-line mt-6" onClick={() => (setF(EMPTY), setState('idle'), (opened.current = Date.now()))}>
+                  {t.again}
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={submit} className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
+                <Field label={t.fields.name} required req={t.required}>
+                  <input name="name" required minLength={3} maxLength={120} autoComplete="name" value={f.name} onChange={set('name')} className="field" />
+                </Field>
+                <Field label={t.fields.email} required req={t.required}>
+                  <input name="email" type="email" required autoComplete="email" value={f.email} onChange={set('email')} className="field" />
+                </Field>
+                <Field label={t.fields.company} required req={t.required}>
+                  <input name="company" required minLength={2} maxLength={120} autoComplete="organization" value={f.company} onChange={set('company')} className="field" />
+                </Field>
+                <Field label={t.fields.role}>
+                  <input name="role" maxLength={80} autoComplete="organization-title" value={f.role} onChange={set('role')} className="field" />
+                </Field>
+                <Field label={t.fields.phone}>
+                  <input name="phone" type="tel" maxLength={30} autoComplete="tel" value={f.phone} onChange={set('phone')} className="field" placeholder={t.phonePh} />
+                </Field>
+                <Field label={t.fields.topic}>
+                  <select name="topic" value={f.topic} onChange={set('topic')} className="field cursor-pointer">
+                    {t.topics.map(([v, l]) => (
+                      <option key={v} value={v}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label={t.fields.message} required req={t.required} wide>
+                  <textarea name="message" required minLength={10} maxLength={4000} rows={4} value={f.message} onChange={set('message')} className="field min-h-28 py-3" placeholder={t.messagePh} />
+                </Field>
+                {/* Armadilha para robôs: pessoas não veem este campo. */}
+                <label className="absolute -left-[9999px]" aria-hidden>
+                  Site
+                  <input tabIndex={-1} autoComplete="off" value={f.website} onChange={set('website')} />
+                </label>
+                <label className="flex items-start gap-3 text-[0.9375rem] text-ink-2 sm:col-span-2">
+                  <input type="checkbox" required checked={f.consent} onChange={set('consent')} className="mt-1 size-5 shrink-0 accent-[rgb(var(--ink))]" />
+                  <span>
+                    {t.consent} <span aria-hidden className="text-signal-text">*</span>
+                  </span>
+                </label>
+                {error && (
+                  <p className="border-l-[3px] border-crit bg-paper px-4 py-3 text-[0.9375rem] text-crit sm:col-span-2" role="alert">
+                    {error}
+                  </p>
                 )}
-              </button>
-            </form>
-          )}
+                <button type="submit" className="btn-ink sm:col-span-2 sm:justify-self-start" disabled={state === 'sending'}>
+                  {state === 'sending' ? t.sending : t.send} <ArrowRight size={18} aria-hidden />
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </div>
     </section>

@@ -1,28 +1,25 @@
-// Assistente de IA do site: responde só com o conteúdo da EnergyCore e oferece botões que levam à
-// demonstração certa (rola até ela e a dispara). Sempre há o caminho para falar com uma pessoa.
+// Assistente de IA do site: responde só com o conteúdo da EnergyCore (no idioma escolhido) e oferece botões
+// que levam à demonstração certa. Sempre há o caminho para falar com uma pessoa.
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import { ArrowUp, Bot, PlayCircle, Sparkles, UserRound, X } from 'lucide-react'
-import { DEMO_LABEL, showDemo } from '../lib/site.js'
+import { ArrowUp, MessageSquare, PlayCircle, UserRound, X } from 'lucide-react'
+import { useContent } from '../data/content.js'
 import { api } from '../lib/env.js'
-
-const SUGGESTIONS = ['Como funciona a simulação de falha?', 'O que o controle de acesso permite?', 'Integra com o Active Directory?', 'Como é a implantação?']
-const GREETING = {
-  role: 'assistant',
-  content: 'Olá! Sou o assistente da EnergyCore. Posso explicar a plataforma e mostrar cada parte funcionando aqui na página. O que você quer saber?',
-  demos: [],
-  followups: [],
-}
+import { useLang } from '../lib/i18n.js'
+import { showDemo } from '../lib/site.js'
 
 const Assistant = forwardRef(function Assistant(_, ref) {
+  const c = useContent()
+  const t = c.assistant
+  const lang = useLang()
   const [open, setOpen] = useState(false)
   const [teaser, setTeaser] = useState(false)
-  const [msgs, setMsgs] = useState([GREETING])
+  const [msgs, setMsgs] = useState([])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const listRef = useRef(null)
   const inputRef = useRef(null)
   useImperativeHandle(ref, () => ({ open: () => setOpen(true) }))
-  // Aviso discreto: uma vez por visita, depois que a pessoa passou do topo, e some sozinho.
+  // Aviso discreto: uma vez por visita, depois de passar do topo, e some sozinho.
   useEffect(() => {
     let shown = false
     try {
@@ -49,7 +46,7 @@ const Assistant = forwardRef(function Assistant(_, ref) {
   useEffect(() => {
     if (open) {
       setTeaser(false)
-      setTimeout(() => inputRef.current?.focus(), 150)
+      setTimeout(() => inputRef.current?.focus(), 120)
     }
   }, [open])
   useEffect(() => {
@@ -72,82 +69,73 @@ const Assistant = forwardRef(function Assistant(_, ref) {
       const res = await fetch(api('/api/assistant'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next.filter((m) => m !== GREETING).slice(-12).map(({ role, content }) => ({ role, content })) }),
+        body: JSON.stringify({ lang, messages: next.slice(-12).map(({ role, content }) => ({ role, content })) }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'erro')
       setMsgs((m) => [...m, { role: 'assistant', content: data.reply, demos: data.demos ?? [], followups: data.followups ?? [] }])
     } catch (err) {
-      setMsgs((m) => [
-        ...m,
-        { role: 'assistant', content: err.message && err.message !== 'erro' && !err.message.includes('fetch') ? err.message : 'Não consegui responder agora. Você pode falar direto com a equipe pelo contato.', demos: ['contato'], followups: [] },
-      ])
+      const msg = err.message && err.message !== 'erro' && !err.message.includes('fetch') ? err.message : t.error
+      setMsgs((m) => [...m, { role: 'assistant', content: msg, demos: ['contato'], followups: [] }])
     } finally {
       setBusy(false)
     }
   }
-
   const demo = (id) => {
     showDemo(id)
-    if (window.matchMedia('(max-width: 640px)').matches) setOpen(false)
+    if (window.matchMedia('(max-width: 40rem)').matches) setOpen(false)
   }
+  const chip = 'min-h-10 border-[1.5px] border-ink/40 px-3 py-1.5 text-left text-[0.8125rem] hover:border-ink'
 
   return (
     <>
       {teaser && !open && (
-        <div className="card fixed bottom-24 right-5 z-50 hidden w-[270px] p-4 text-[14px] shadow-2xl sm:block">
-          <button className="absolute right-2 top-2 text-faint hover:text-text" onClick={() => setTeaser(false)} aria-label="Fechar aviso">
-            <X size={14} />
+        <aside aria-label={t.title} className="fixed bottom-24 right-5 z-50 hidden w-[17rem] border-[1.5px] border-ink bg-panel p-4 text-[0.875rem] shadow-[5px_5px_0_rgb(var(--ink))] sm:block">
+          <button type="button" className="absolute right-1 top-1 grid size-9 place-items-center text-ink-2 hover:text-ink" onClick={() => setTeaser(false)} aria-label={t.teaserClose}>
+            <X size={15} aria-hidden />
           </button>
-          <p className="pr-4">
-            Quer ver uma <b>simulação de falha</b> ou entender o <b>controle de acesso</b>? Pergunte aqui.
-          </p>
-          <button className="mt-2 font-semibold text-brand-strong hover:underline" onClick={() => setOpen(true)}>
-            Abrir o assistente
+          <p className="pr-6">{t.teaser}</p>
+          <button type="button" className="mt-2 min-h-10 font-semibold underline decoration-signal decoration-2 underline-offset-4" onClick={() => setOpen(true)}>
+            {t.teaserOpen}
           </button>
-        </div>
+        </aside>
       )}
       <button
+        type="button"
         onClick={() => setOpen(!open)}
-        className="fixed bottom-5 right-5 z-50 flex h-14 items-center gap-2 rounded-full bg-brandbtn pl-4 pr-5 font-semibold text-white shadow-[0_18px_40px_-12px_rgb(var(--glow))] transition hover:-translate-y-0.5"
-        aria-label={open ? 'Fechar o assistente' : 'Abrir o assistente de IA'}
+        className="fixed bottom-5 right-5 z-50 flex min-h-14 items-center gap-2.5 border-[1.5px] border-ink bg-ink px-4 font-semibold text-paper shadow-[5px_5px_0_rgb(var(--signal))] transition-transform hover:-translate-y-0.5"
+        aria-label={open ? t.close : t.open}
         aria-expanded={open}
       >
-        {open ? <X size={20} /> : <Sparkles size={20} />}
-        <span className="hidden sm:inline">{open ? 'Fechar' : 'Pergunte à EnergyCore'}</span>
+        {open ? <X size={20} aria-hidden /> : <MessageSquare size={20} aria-hidden />}
+        <span className="hidden sm:inline">{open ? t.closeShort : t.fab}</span>
       </button>
       {open && (
-        <section
-          className="fixed inset-x-3 bottom-24 z-50 flex max-h-[min(640px,calc(100svh-120px))] flex-col overflow-hidden rounded-3xl border border-line bg-surface shadow-2xl sm:inset-x-auto sm:right-5 sm:w-[400px]"
-          role="dialog"
-          aria-label="Assistente de IA da EnergyCore"
-        >
-          <header className="flex items-center gap-3 border-b border-line bg-elevated/60 px-4 py-3">
-            <span className="grid size-9 place-items-center rounded-full bg-brandbtn text-white">
-              <Bot size={18} />
-            </span>
+        <section className="fixed inset-x-3 bottom-24 z-50 flex max-h-[min(40rem,calc(100svh-8rem))] flex-col border-[1.5px] border-ink bg-panel shadow-[6px_6px_0_rgb(var(--ink))] sm:inset-x-auto sm:right-5 sm:w-[25rem]" role="dialog" aria-label={t.title}>
+          <header className="flex items-center gap-3 border-b-[1.5px] border-ink px-4 py-3">
             <span className="min-w-0 flex-1">
-              <span className="block font-semibold">Assistente EnergyCore</span>
-              <span className="block text-[12px] text-faint">Responde com base no conteúdo da EnergyCore</span>
+              <span className="block font-bold">{t.title}</span>
+              <span className="block text-[0.75rem] text-ink-2">{t.subtitle}</span>
             </span>
-            <a href="#contato" onClick={() => setOpen(false)} className="flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-muted hover:text-text" title="Falar com uma pessoa">
-              <UserRound size={14} /> Pessoa
+            <a href="#contato" onClick={() => setOpen(false)} className="inline-flex min-h-10 items-center gap-1 px-2 font-mono text-[0.75rem] uppercase tracking-wider hover:text-signal-text" title={t.personTitle}>
+              <UserRound size={14} aria-hidden /> {t.person}
             </a>
           </header>
           <div ref={listRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4" aria-live="polite">
+            <p className="max-w-[92%] border-l-[3px] border-signal bg-paper px-3.5 py-2.5 text-[0.875rem] leading-relaxed">{t.greeting}</p>
             {msgs.map((m, i) =>
               m.role === 'user' ? (
-                <p key={i} className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-brandbtn px-3.5 py-2 text-[14px] text-white">
+                <p key={i} className="ml-auto max-w-[85%] bg-ink px-3.5 py-2 text-[0.875rem] text-paper">
                   {m.content}
                 </p>
               ) : (
                 <div key={i} className="max-w-[92%] space-y-2">
-                  <p className="rounded-2xl rounded-tl-md bg-elevated px-3.5 py-2.5 text-[14px] leading-relaxed">{m.content}</p>
+                  <p className="border-l-[3px] border-signal bg-paper px-3.5 py-2.5 text-[0.875rem] leading-relaxed">{m.content}</p>
                   {m.demos?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {m.demos.map((d) => (
-                        <button key={d} onClick={() => demo(d)} className="flex items-center gap-1.5 rounded-full border border-brand/40 bg-brand/10 px-3 py-1.5 text-[13px] font-medium text-brand-strong hover:bg-brand/20">
-                          <PlayCircle size={14} /> {DEMO_LABEL[d] ?? d}
+                        <button key={d} type="button" onClick={() => demo(d)} className="inline-flex min-h-10 items-center gap-1.5 border-[1.5px] border-ink bg-ink px-3 text-[0.8125rem] font-medium text-paper hover:bg-signal hover:text-ink">
+                          <PlayCircle size={14} aria-hidden /> {c.demoLabel[d] ?? d}
                         </button>
                       ))}
                     </div>
@@ -155,7 +143,7 @@ const Assistant = forwardRef(function Assistant(_, ref) {
                   {m.followups?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {m.followups.map((f) => (
-                        <button key={f} onClick={() => ask(f)} className="rounded-full border border-line px-3 py-1.5 text-left text-[13px] text-muted hover:border-brand/40 hover:text-text">
+                        <button key={f} type="button" onClick={() => ask(f)} className={chip}>
                           {f}
                         </button>
                       ))}
@@ -164,21 +152,19 @@ const Assistant = forwardRef(function Assistant(_, ref) {
                 </div>
               ),
             )}
-            {msgs.length === 1 && (
+            {msgs.length === 0 && (
               <div className="flex flex-wrap gap-1.5">
-                {SUGGESTIONS.map((s) => (
-                  <button key={s} onClick={() => ask(s)} className="rounded-full border border-line px-3 py-1.5 text-left text-[13px] text-muted hover:border-brand/40 hover:text-text">
+                {t.suggestions.map((s) => (
+                  <button key={s} type="button" onClick={() => ask(s)} className={chip}>
                     {s}
                   </button>
                 ))}
               </div>
             )}
             {busy && (
-              <div className="flex items-center gap-1.5 px-1" aria-label="Pensando">
-                {[0, 1, 2].map((i) => (
-                  <span key={i} className="size-1.5 animate-bounce rounded-full bg-faint" style={{ animationDelay: `${i * 120}ms` }} />
-                ))}
-              </div>
+              <p className="flex items-center gap-2 font-mono text-[0.75rem] text-ink-2" aria-label={t.thinking}>
+                <span className="inline-block size-2 animate-pulse bg-signal" aria-hidden /> {t.thinking}…
+              </p>
             )}
           </div>
           <form
@@ -186,25 +172,17 @@ const Assistant = forwardRef(function Assistant(_, ref) {
               e.preventDefault()
               ask(input)
             }}
-            className="flex items-center gap-2 border-t border-line p-3"
+            className="flex items-center gap-2 border-t-[1.5px] border-ink p-3"
           >
             <label className="sr-only" htmlFor="assistente-pergunta">
-              Sua pergunta
+              {t.input}
             </label>
-            <input
-              id="assistente-pergunta"
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              maxLength={600}
-              placeholder="Pergunte sobre a plataforma…"
-              className="h-11 min-w-0 flex-1 rounded-xl border border-line bg-bg px-3 text-[14px] outline-none focus:border-brand"
-            />
-            <button className="grid size-11 shrink-0 place-items-center rounded-xl bg-brandbtn text-white disabled:opacity-40" disabled={!input.trim() || busy} aria-label="Enviar pergunta">
-              <ArrowUp size={18} />
+            <input id="assistente-pergunta" ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} maxLength={600} placeholder={t.placeholder} className="field min-h-11 min-w-0 flex-1 text-[0.875rem]" />
+            <button type="submit" className="grid size-11 shrink-0 place-items-center bg-ink text-paper disabled:opacity-40" disabled={!input.trim() || busy} aria-label={t.send}>
+              <ArrowUp size={18} aria-hidden />
             </button>
           </form>
-          <p className="px-4 pb-3 text-[11px] text-faint">IA pode errar. Para proposta e detalhes do seu cenário, fale com a equipe.</p>
+          <p className="px-4 pb-3 text-[0.75rem] text-ink-2">{t.disclaimer}</p>
         </section>
       )}
     </>

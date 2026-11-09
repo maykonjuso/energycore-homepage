@@ -1,102 +1,88 @@
-// Demo de acesso: escolha um perfil e veja o que ele enxerga (áreas do datacenter, regiões da rede) e o que
-// pode fazer. Mesmo jeito de mostrar do resumo de acesso da plataforma.
+// Demo de acesso: escolha um perfil e veja o que ele enxerga e pode fazer.
 import { useState } from 'react'
-import { Bell, Bot, Download, KeyRound, LineChart, Network, Server, ShieldCheck, SlidersHorizontal, Zap } from 'lucide-react'
+import { Bell, Bot, Download, KeyRound, LineChart, Network, Server, SlidersHorizontal, Zap } from 'lucide-react'
+import { useContent } from '../data/content.js'
 
-const DC = ['Geral do site', 'Distribuição CA', 'Nobreaks', 'Refrigeração', 'Racks e PDU', 'Sensores']
-const TEL = ['Núcleo nacional', 'São Paulo', 'Rio de Janeiro', 'Minas Gerais']
-const ACTIONS = [
-  ['ack', Bell, 'Reconhecer'],
-  ['export', Download, 'Exportar'],
-  ['simulate', Zap, 'Simular falha'],
-  ['trends', LineChart, 'Tendências'],
-  ['limits', SlidersHorizontal, 'Limites'],
-  ['agent', Bot, 'Agente IA'],
-  ['admin', KeyRound, 'Acessos'],
-]
+const ICONS = { ack: Bell, export: Download, simulate: Zap, trends: LineChart, limits: SlidersHorizontal, agent: Bot, admin: KeyRound }
+const ALL = Object.keys(ICONS)
+// Índices das áreas liberadas em cada perfil (os nomes vêm do idioma escolhido).
 const PROFILES = [
-  { id: 'admin', name: 'Administrador', desc: 'Acesso total, inclusive aos acessos dos outros.', dc: DC, tel: TEL, act: ACTIONS.map((a) => a[0]) },
-  { id: 'noc-mg', name: 'NOC Minas Gerais', desc: 'Só a rede de Minas. Simula falha e usa o agente.', dc: [], tel: ['Minas Gerais'], act: ['ack', 'simulate', 'trends', 'agent'] },
-  { id: 'energia', name: 'Facilities · energia', desc: 'Energia e refrigeração do datacenter. Edita limites.', dc: ['Geral do site', 'Distribuição CA', 'Nobreaks', 'Refrigeração'], tel: [], act: ['ack', 'export', 'trends', 'limits'] },
-  { id: 'auditor', name: 'Auditoria', desc: 'Vê tudo, não altera nada.', dc: DC, tel: TEL, act: ['trends', 'export'] },
+  { id: 'admin', dc: [0, 1, 2, 3, 4, 5], tel: [0, 1, 2, 3], act: ALL },
+  { id: 'noc-mg', dc: [], tel: [3], act: ['ack', 'simulate', 'trends', 'agent'] },
+  { id: 'energia', dc: [0, 1, 2, 3], tel: [], act: ['ack', 'export', 'trends', 'limits'] },
+  { id: 'auditor', dc: [0, 1, 2, 3, 4, 5], tel: [0, 1, 2, 3], act: ['trends', 'export'] },
 ]
 
-function Tile({ on, label, i }) {
+function Tile({ on, label, t }) {
   return (
-    <span
-      className={`rounded-lg border px-2.5 py-1.5 text-[13px] font-medium transition-all duration-500 ${on ? 'border-ok/40 bg-ok/15 text-ok' : 'border-line bg-elevated/50 text-faint'}`}
-      style={{ transitionDelay: `${i * 40}ms` }}
-    >
+    <li className={`flex items-center gap-2 border-[1.5px] px-2.5 py-1.5 text-[0.8125rem] font-medium transition-colors ${on ? 'border-ink bg-ink text-paper' : 'border-ink/30 text-ink-2'}`}>
+      <span className={`size-2 ${on ? 'bg-signal' : 'border border-ink/50'}`} aria-hidden />
       {label}
-    </span>
+      <span className="sr-only">({on ? t.visible : t.hidden})</span>
+    </li>
   )
 }
 
 export default function DemoAccess() {
-  const [p, setP] = useState(PROFILES[1])
+  const t = useContent().access
+  const [pid, setPid] = useState('noc-mg')
+  const p = PROFILES.find((x) => x.id === pid)
+  const name = t.profiles[pid][0]
   return (
-    <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-      <div className="space-y-2" role="radiogroup" aria-label="Perfil de exemplo">
-        {PROFILES.map((x) => (
-          <button
-            key={x.id}
-            role="radio"
-            aria-checked={x.id === p.id}
-            onClick={() => setP(x)}
-            className={`w-full rounded-2xl border p-4 text-left transition-all ${x.id === p.id ? 'border-brand bg-brand/10 shadow-[0_10px_30px_-18px_rgb(var(--glow))]' : 'border-line bg-surface/60 hover:border-brand/40'}`}
-          >
-            <span className="flex items-center gap-2 font-semibold">
-              {x.id === 'admin' && <ShieldCheck size={16} className="text-brand" />} {x.name}
-            </span>
-            <span className="mt-1 block text-[13px] text-muted">{x.desc}</span>
-          </button>
-        ))}
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+      <div role="radiogroup" aria-label={t.group} className="border-t-[1.5px] border-ink">
+        {PROFILES.map((x) => {
+          const [n, d] = t.profiles[x.id]
+          const on = x.id === pid
+          return (
+            <button key={x.id} type="button" role="radio" aria-checked={on} onClick={() => setPid(x.id)} className={`block w-full border-b-[1.5px] border-ink p-4 text-left transition-colors ${on ? 'bg-ink text-paper' : 'hover:bg-ink/5'}`}>
+              <span className="font-semibold">{n}</span>
+              <span className={`mt-1 block text-[0.8125rem] ${on ? 'text-paper/80' : 'text-ink-2'}`}>{d}</span>
+            </button>
+          )
+        })}
       </div>
-      <div className="card p-5 sm:p-7" aria-live="polite">
-        <p className="text-[13px] font-semibold uppercase tracking-wider text-faint">O que {p.name} enxerga</p>
-        <div className="mt-5 space-y-5">
+      <div aria-live="polite">
+        <p className="label">{t.sees(name)}</p>
+        <div className="mt-5 space-y-6">
           <div>
-            <p className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-muted">
-              <Server size={15} /> Datacenter
+            <p className="mb-2 flex items-center gap-1.5 text-[0.875rem] font-semibold">
+              <Server size={15} aria-hidden /> {t.dc}
             </p>
-            <div className="flex flex-wrap gap-1.5">
-              {DC.map((d, i) => (
-                <Tile key={d} label={d} on={p.dc.includes(d)} i={i} />
+            <ul className="flex flex-wrap gap-1.5">
+              {t.dcAreas.map((d, i) => (
+                <Tile key={d} label={d} on={p.dc.includes(i)} t={t} />
               ))}
-            </div>
+            </ul>
           </div>
           <div>
-            <p className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-muted">
-              <Network size={15} /> Rede telecom
+            <p className="mb-2 flex items-center gap-1.5 text-[0.875rem] font-semibold">
+              <Network size={15} aria-hidden /> {t.tel}
             </p>
-            <div className="flex flex-wrap gap-1.5">
-              {TEL.map((d, i) => (
-                <Tile key={d} label={d} on={p.tel.includes(d)} i={i + 6} />
+            <ul className="flex flex-wrap gap-1.5">
+              {t.telAreas.map((d, i) => (
+                <Tile key={d} label={d} on={p.tel.includes(i)} t={t} />
               ))}
-            </div>
+            </ul>
           </div>
           <div>
-            <p className="mb-2 text-[13px] font-semibold text-muted">Pode fazer</p>
-            <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
-              {ACTIONS.map(([id, Icon, label], i) => {
+            <p className="mb-2 text-[0.875rem] font-semibold">{t.can}</p>
+            <ul className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 xl:grid-cols-7">
+              {ALL.map((id) => {
+                const Icon = ICONS[id]
                 const on = p.act.includes(id)
                 return (
-                  <span
-                    key={id}
-                    className={`flex flex-col items-center gap-1.5 rounded-xl border px-1 py-3 text-center transition-all duration-500 ${on ? 'border-ok/40 bg-ok/15 text-ok' : 'border-line bg-elevated/40 text-faint opacity-60'}`}
-                    style={{ transitionDelay: `${i * 35}ms` }}
-                  >
-                    <Icon size={18} />
-                    <span className="text-[11px] font-medium leading-tight">{label}</span>
-                  </span>
+                  <li key={id} className={`flex flex-col items-center gap-1.5 border-[1.5px] px-1 py-3 text-center ${on ? 'border-ink bg-ink text-paper' : 'border-ink/30 text-ink-2'}`}>
+                    <Icon size={18} aria-hidden />
+                    <span className="text-[0.75rem] font-medium leading-tight">{t.actions[id]}</span>
+                    <span className="sr-only">({on ? t.allowed : t.denied})</span>
+                  </li>
                 )
               })}
-            </div>
+            </ul>
           </div>
         </div>
-        <p className="mt-6 border-t border-line pt-4 text-[13px] text-muted">
-          O que está fora do alcance nem aparece: nem na busca, nem nos alarmes, nem nas respostas do agente de IA. E a regra vale também na API.
-        </p>
+        <p className="mt-6 border-t border-ink/20 pt-4 text-[0.875rem] text-ink-2">{t.note}</p>
       </div>
     </div>
   )

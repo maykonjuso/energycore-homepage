@@ -1,120 +1,89 @@
-// Plataforma: no computador a seção fica fixa e, conforme a rolagem, troca o módulo e a tela (scrub +
-// pin). No celular vira uma lista de cartões. O assistente pode pedir um módulo (evento ec-demo).
+// § 02 · Módulos: lista numerada (abas verticais) e a tela do módulo escolhido ao lado.
+// No celular, cada módulo aparece com a própria tela, um embaixo do outro.
 import { useCallback, useRef, useState } from 'react'
-import { Check } from 'lucide-react'
-import { MODULES } from '../data/content.js'
-import { reducedMotion, useMotion } from '../lib/motion.js'
+import { SHOTS, useContent } from '../data/content.js'
+import { useReveal } from '../lib/reveal.js'
 import { useDemoEvent, useMediaQuery } from '../lib/site.js'
+import { tabKeys } from '../lib/tabs.js'
+import SecHead from './SecHead.jsx'
 import Shot from './Shot.jsx'
 
-export default function Platform() {
-  const ref = useRef(null)
-  const stRef = useRef(null)
-  const [active, setActive] = useState(0)
-  const wide = useMediaQuery('(min-width: 1024px)')
-  useMotion(
-    ref,
-    (gsap, ST) => {
-      if (!wide) return
-      stRef.current = ST.create({
-        trigger: ref.current,
-        start: 'top top',
-        end: `+=${MODULES.length * 70}%`,
-        pin: '[data-pin]',
-        scrub: true,
-        // Só re-renderiza quando o módulo muda (antes era a cada quadro da rolagem).
-        onUpdate: (self) => {
-          const i = Math.min(MODULES.length - 1, Math.floor(self.progress * MODULES.length))
-          setActive((cur) => (cur === i ? cur : i))
-        },
-      })
-    },
-    [wide],
-  )
-  const goTo = useCallback((i) => {
-    const st = stRef.current
-    if (st && !reducedMotion()) window.scrollTo({ top: st.start + ((st.end - st.start) * (i + 0.5)) / MODULES.length, behavior: 'smooth' })
-    setActive(i)
-  }, [])
-  useDemoEvent(
-    useCallback(
-      (id) => {
-        const i = MODULES.findIndex((m) => m.id === id)
-        if (i >= 0) setTimeout(() => goTo(i), 450)
-      },
-      [goTo],
-    ),
-  )
-  const m = MODULES[active]
+function Points({ points }) {
   return (
-    <section id="plataforma" ref={ref} className="relative" aria-labelledby="plataforma-titulo">
-      <div data-pin className="lg:flex lg:h-screen lg:items-center">
-        <div className="page grid gap-10 py-20 lg:grid-cols-[400px_1fr] lg:gap-14 lg:py-0">
-          <div>
-            <span className="eyebrow">A plataforma</span>
-            <h2 id="plataforma-titulo" className="h2 mt-4">
-              Tudo o que a operação precisa, numa tela só.
-            </h2>
-            <ol className="mt-8 hidden space-y-1 lg:block" aria-label="Módulos">
-              {MODULES.map((x, i) => (
-                <li key={x.id}>
+    <ul className="mt-5 grid gap-2 sm:grid-cols-3">
+      {points.map((p) => (
+        <li key={p} className="flex gap-2 text-[0.875rem] text-ink-2">
+          <span className="mt-[0.45rem] inline-block size-1.5 shrink-0 bg-signal" aria-hidden />
+          {p}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+export default function Platform() {
+  const t = useContent().platform
+  const ref = useRef(null)
+  useReveal(ref)
+  const wide = useMediaQuery('(min-width: 64rem)')
+  const [active, setActive] = useState(t.modules[0].id)
+  useDemoEvent(useCallback((id) => t.modules.some((m) => m.id === id) && setActive(id), [t.modules]))
+  const ids = t.modules.map((m) => m.id)
+  const m = t.modules.find((x) => x.id === active) ?? t.modules[0]
+  return (
+    <section ref={ref} id="plataforma" aria-labelledby="plataforma-titulo" className="border-t-[1.5px] border-ink bg-paper-2 py-20 sm:py-28">
+      <div className="sheet">
+        <SecHead id="plataforma-titulo" no={t.no} coord={t.coord} title={t.title} lead={t.lead} />
+        {wide ? (
+          <div className="mt-14 grid grid-cols-[22rem_1fr] gap-12">
+            <div role="tablist" aria-orientation="vertical" aria-labelledby="plataforma-titulo" className="border-t-[1.5px] border-ink" onKeyDown={(e) => tabKeys(e, ids, active, setActive, true)}>
+              {t.modules.map((x, i) => {
+                const on = x.id === active
+                return (
                   <button
-                    aria-current={i === active ? 'true' : undefined}
-                    onClick={() => goTo(i)}
-                    className={`group flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-all ${i === active ? 'bg-surface shadow-sm ring-1 ring-line' : 'opacity-60 hover:opacity-100'}`}
+                    key={x.id}
+                    id={`tab-${x.id}`}
+                    role="tab"
+                    aria-selected={on}
+                    aria-controls="painel-modulo"
+                    tabIndex={on ? 0 : -1}
+                    onClick={() => setActive(x.id)}
+                    className={`flex w-full items-baseline gap-4 border-b-[1.5px] border-ink px-1 py-4 text-left transition-colors ${on ? 'bg-ink text-paper' : 'hover:bg-ink/5'}`}
                   >
-                    <span className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg ${i === active ? 'bg-brandbtn text-white' : 'bg-elevated text-muted'}`}>
-                      <x.icon size={16} />
+                    <span className={`num flex items-center gap-2 font-mono text-[0.8125rem] ${on ? 'text-paper' : 'text-ink-2'}`}>
+                      {on && <span className="size-2 bg-signal" aria-hidden />}
+                      {String(i + 1).padStart(2, '0')}
                     </span>
-                    <span className="min-w-0">
-                      <span className="block text-[15px] font-semibold">{x.title}</span>
-                      {/* Sempre no DOM, abrindo pela altura: trocar de módulo não faz a coluna pular. */}
-                      <span className={`grid transition-[grid-template-rows,opacity] duration-500 ease-out ${i === active ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`} aria-hidden={i !== active}>
-                        <span className="overflow-hidden">
-                          <span className="block pt-1 text-[14px] leading-relaxed text-muted">{x.text}</span>
-                        </span>
-                      </span>
+                    <span className="text-[1.125rem] font-bold" style={{ fontStretch: '106%' }}>
+                      {x.title}
                     </span>
                   </button>
-                </li>
-              ))}
-            </ol>
-            <div className="mt-4 hidden h-1 overflow-hidden rounded-full bg-elevated lg:block" aria-hidden>
-              <div className="h-full rounded-full bg-brand transition-all duration-500" style={{ width: `${((active + 1) / MODULES.length) * 100}%` }} />
+                )
+              })}
+            </div>
+            <div id="painel-modulo" role="tabpanel" aria-labelledby={`tab-${m.id}`} tabIndex={0}>
+              <Shot key={m.id} name={SHOTS[m.id]} alt={t.shotAlt(m.title)} />
+              <p className="mt-6 max-w-2xl text-[1.0625rem] leading-relaxed">{m.text}</p>
+              <Points points={m.points} />
             </div>
           </div>
-          <div className="hidden lg:block" aria-live="polite">
-            <div className="relative">
-              {MODULES.map((x, i) => (
-                <div key={x.id} className={`transition-all duration-700 ${i === active ? 'relative opacity-100' : 'pointer-events-none absolute inset-0 translate-y-4 scale-[0.98] opacity-0'}`} aria-hidden={i !== active}>
-                  <Shot name={x.shot} alt={`Tela de ${x.title.toLowerCase()} da EnergyCore`} eager />
+        ) : (
+          <ol className="mt-12 space-y-14">
+            {t.modules.map((x, i) => (
+              <li key={x.id} data-reveal>
+                <h3 className="flex items-baseline gap-3 border-t-[1.5px] border-ink pt-4 text-[1.375rem] font-bold" style={{ fontStretch: '106%' }}>
+                  <span className="num font-mono text-[0.8125rem] text-signal-text">{String(i + 1).padStart(2, '0')}</span>
+                  {x.title}
+                </h3>
+                <p className="mt-3 text-[1rem] leading-relaxed text-ink-2">{x.text}</p>
+                <div className="mt-5">
+                  <Shot name={SHOTS[x.id]} alt={t.shotAlt(x.title)} />
                 </div>
-              ))}
-            </div>
-            <ul className="mt-6 grid grid-cols-3 gap-3">
-              {m.points.map((p) => (
-                <li key={p} className="flex items-start gap-2 text-[14px] text-muted">
-                  <Check size={16} className="mt-0.5 shrink-0 text-ok" /> {p}
-                </li>
-              ))}
-            </ul>
-          </div>
-          {/* Celular e tablet: cartões empilhados */}
-          <div className="space-y-6 lg:hidden">
-            {MODULES.map((x) => (
-              <article key={x.id} className="card overflow-hidden p-5" data-reveal>
-                <div className="flex items-center gap-3">
-                  <span className="grid size-9 place-items-center rounded-lg bg-brandbtn text-white">
-                    <x.icon size={17} />
-                  </span>
-                  <h3 className="font-display text-[19px] font-bold">{x.title}</h3>
-                </div>
-                <p className="mt-3 text-[15px] leading-relaxed text-muted">{x.text}</p>
-                <Shot name={x.shot} alt={`Tela de ${x.title.toLowerCase()} da EnergyCore`} className="mt-4" bar={false} />
-              </article>
+                <Points points={x.points} />
+              </li>
             ))}
-          </div>
-        </div>
+          </ol>
+        )}
       </div>
     </section>
   )

@@ -1,45 +1,30 @@
-// Segurança e governança: grade de cartões que entram em sequência, com a tela real da ficha de acesso.
+// § 05 · Segurança como folha de especificação: item e descrição em linhas com régua.
 import { useRef } from 'react'
-import { SECURITY } from '../data/content.js'
-import { revealIn, useMotion } from '../lib/motion.js'
-import Shot from './Shot.jsx'
+import { useContent } from '../data/content.js'
+import { useReveal } from '../lib/reveal.js'
+import SecHead from './SecHead.jsx'
 
 export default function Security() {
+  const t = useContent().security
   const ref = useRef(null)
-  useMotion(ref, () => revealIn(ref.current))
+  useReveal(ref)
   return (
-    <section id="seguranca" ref={ref} className="relative overflow-hidden py-24 sm:py-32" aria-labelledby="seg-titulo">
-      <div className="glow pointer-events-none absolute -right-40 top-20 h-[500px] w-[600px] opacity-60" aria-hidden />
-      <div className="page grid items-center gap-14 lg:grid-cols-[1fr_1.1fr]">
-        <div>
-          <div data-reveal>
-            <span className="eyebrow">Segurança e governança</span>
-            <h2 id="seg-titulo" className="h2 mt-4">
-              Feita para empresas que passam por auditoria.
-            </h2>
-            <p className="lead mt-4">Permissão conferida no servidor, integração com o Active Directory e registro de tudo. A segurança não depende de esconder botões.</p>
-          </div>
-          <ul className="mt-10 grid gap-5 sm:grid-cols-2">
-            {SECURITY.map((s) => (
-              <li key={s.title} className="flex gap-3" data-reveal>
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand">
-                  <s.icon size={19} />
-                </span>
-                <span>
-                  <span className="block font-semibold">{s.title}</span>
-                  <span className="mt-1 block text-[14px] leading-relaxed text-muted">{s.text}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div data-reveal className="relative">
-          <Shot name="ficha" alt="Ficha de acesso de uma pessoa: páginas liberadas, áreas do datacenter e regiões da rede que ela enxerga e ações permitidas" />
-          <div className="card absolute -bottom-6 -left-4 hidden max-w-[260px] p-4 sm:block">
-            <p className="text-[12px] font-semibold uppercase tracking-wider text-faint">Revisão de acessos</p>
-            <p className="mt-1 text-[14px]">Alertas de risco, “quem tem acesso a X” e auditoria exportável em CSV.</p>
-          </div>
-        </div>
+    <section ref={ref} id="seguranca" aria-labelledby="seguranca-titulo" className="border-t-[1.5px] border-ink py-20 sm:py-28">
+      <div className="sheet">
+        <SecHead id="seguranca-titulo" no={t.no} coord={t.coord} title={t.title} lead={t.lead} />
+        <dl className="mt-12 border-t-[1.5px] border-ink">
+          {t.rows.map(([k, v], i) => (
+            <div key={k} className="grid gap-2 border-b border-ink/25 py-5 md:grid-cols-[3rem_18rem_1fr] md:gap-6" data-reveal={i * 60}>
+              <span className="num font-mono text-[0.8125rem] text-ink-2" aria-hidden>
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <dt className="text-[1.125rem] font-bold" style={{ fontStretch: '106%' }}>
+                {k}
+              </dt>
+              <dd className="text-[1rem] leading-relaxed text-ink-2">{v}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </section>
   )

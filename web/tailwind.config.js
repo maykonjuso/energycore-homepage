@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+// Paleta "prancha técnica": papel, tinta e um único sinal (laranja de segurança). Valores em src/index.css.
 const c = (v) => `rgb(var(--${v}) / <alpha-value>)`
 export default {
   darkMode: 'class',
@@ -6,17 +7,23 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: c('bg'), surface: c('surface'), elevated: c('elevated'), line: c('line'),
-        text: c('text'), muted: c('muted'), faint: c('faint'),
-        brand: c('brand'), brandbtn: c('brand-btn'), 'brand-strong': c('brand-strong'), accent: c('accent'),
-        ok: c('ok'), warn: c('warn'), crit: c('crit'),
+        paper: c('paper'),
+        'paper-2': c('paper-2'),
+        panel: c('panel'),
+        ink: c('ink'),
+        'ink-2': c('ink-2'),
+        rule: c('rule'),
+        signal: c('signal'),
+        'signal-text': c('signal-text'),
+        ok: c('ok'),
+        crit: c('crit'),
+        warn: c('warn'),
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+        sans: ['Archivo', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
-      maxWidth: { page: '1200px' },
+      maxWidth: { sheet: '84rem' },
     },
   },
   plugins: [],

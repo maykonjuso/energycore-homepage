@@ -1,19 +1,12 @@
-// Tela real do produto (captura), na versão do tema atual, dentro de uma moldura de navegador.
+// Tela real do produto (captura no tema atual) dentro de uma moldura com marcas de corte.
 import { useTheme } from '../lib/site.js'
 import { asset } from '../lib/env.js'
 
-export default function Shot({ name, alt, className = '', bar = true, eager = false }) {
+export default function Shot({ name, alt, eager = false, caption }) {
   const [dark] = useTheme()
   return (
-    <div className={`frame ${className}`}>
-      {bar && (
-        <div className="frame-bar" aria-hidden>
-          <i />
-          <i />
-          <i />
-          <span className="ml-3 truncate rounded-md bg-surface/70 px-2 py-0.5 font-mono text-[11px] text-faint">app.energycoreconsulting.com.br</span>
-        </div>
-      )}
+    <figure className="crop">
+      <span className="crop-b" aria-hidden />
       <img
         src={asset(`produto/${name}-${dark ? 'dark' : 'light'}.webp`)}
         alt={alt}
@@ -21,8 +14,9 @@ export default function Shot({ name, alt, className = '', bar = true, eager = fa
         height={1000}
         loading={eager ? 'eager' : 'lazy'}
         decoding="async"
-        className="block h-auto w-full"
+        className="block h-auto w-full border border-ink/25"
       />
-    </div>
+      {caption && <figcaption className="label mt-3 flex justify-between gap-4">{caption}</figcaption>}
+    </figure>
   )
 }
